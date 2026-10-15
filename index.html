@@ -401,7 +401,12 @@ create table if not exists price_history (
     .list-title svg { flex: none; opacity: .6; }
     .sm-row.is-active .sm-name { color: var(--accent); }
     .acct { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-    .acct-mail { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+    .acct-mail { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .acct-btns { display: flex; gap: 8px; flex: none; }
+    .acct { flex-wrap: wrap; }
+    .priv h3 { margin: 16px 0 4px; font-size: 15px; }
+    .priv p { margin: 0; font-size: 14px; color: var(--muted); line-height: 1.9; }
+    .auth-note .btn-link { padding: 0 2px; }
 
     .splash { display: none; min-height: 100vh; min-height: 100dvh; place-items: center; color: var(--muted); }
     html.has-session .splash { display: grid; }
@@ -436,7 +441,7 @@ create table if not exists price_history (
         <button class="btn-link neutral" id="authToggle" type="button">حساب ندارید؟ ثبت‌نام</button>
         <button class="btn-link neutral" id="authForgot" type="button">فراموشی رمز</button>
       </div>
-      <p class="auth-note">لیست‌های هر کاربر خصوصی است و فقط خودش آن‌ها را می‌بیند.</p>
+      <p class="auth-note">لیست‌های هر کاربر خصوصی است و فقط اعضای همان لیست آن را می‌بینند. <button class="btn-link neutral" id="authPrivacy" type="button">حریم خصوصی و شرایط استفاده</button></p>
     </div>
   </section>
 
@@ -514,6 +519,69 @@ create table if not exists price_history (
   </div>
   </div>
 
+  <dialog class="sheet" id="acctDlg" aria-labelledby="acctTitle">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="acctTitle">حساب کاربری</h2>
+        <button class="btn" id="acctClose" type="button">بستن</button>
+      </div>
+      <p class="hint" dir="ltr" id="acctMail2" style="text-align:left"></p>
+
+      <section class="rep-sec">
+        <h3>تغییر رمز عبور</h3>
+        <form class="shelf-add" id="pwForm" autocomplete="off">
+          <input class="field" id="pwNew" type="password" minlength="6" autocomplete="new-password" dir="ltr" placeholder="رمز عبور جدید" aria-label="رمز عبور جدید" required>
+          <button class="btn btn-primary" type="submit">ذخیره</button>
+        </form>
+      </section>
+
+      <section class="rep-sec">
+        <h3>نسخه پشتیبان</h3>
+        <p class="rep-note">همه لیست‌هایی که عضو آن هستید (کالاها، قفسه‌ها، قیمت‌ها و تاریخچه خریدها) در یک فایل دانلود می‌شود.</p>
+        <button class="btn" id="exportBtn" type="button" style="margin-top:10px">دانلود نسخه پشتیبان</button>
+      </section>
+
+      <section class="rep-sec">
+        <h3>حریم خصوصی</h3>
+        <button class="btn" id="acctPrivacy" type="button">خواندن توضیحات حریم خصوصی</button>
+      </section>
+
+      <section class="rep-sec">
+        <h3 style="color:var(--danger)">حذف حساب</h3>
+        <p class="rep-note">با حذف حساب، ایمیل و رمز شما و همه لیست‌هایی که فقط خودتان در آن‌ها هستید برای همیشه پاک می‌شود. اگر لیستی که مالک آن هستید عضو دیگری دارد، مالکیت آن به قدیمی‌ترین عضو منتقل می‌شود و لیست برای او می‌ماند. این کار برگشت‌پذیر نیست؛ پیش از آن یک نسخه پشتیبان بگیرید.</p>
+        <label class="rep-note" for="delConfirm" style="display:block;margin-top:10px">برای تأیید، ایمیل خود را عیناً بنویسید:</label>
+        <input class="field" id="delConfirm" dir="ltr" autocomplete="off" autocapitalize="off" style="margin-top:6px">
+        <button class="btn btn-solid-danger" id="delBtn" type="button" style="margin-top:10px;width:100%" disabled>حذف دائمی حساب من</button>
+        <div id="acctSqlBox" class="empty setup" hidden style="margin-top:12px">
+          <p>حذف حساب هنوز در پایگاه داده فعال نشده است. دستور زیر را در SQL Editor اجرا کنید:</p>
+          <pre id="acctSqlText"></pre>
+          <button class="btn btn-primary" type="button" id="acctSqlCopy">کپی دستور</button>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <dialog class="sheet" id="privDlg" aria-labelledby="privTitle">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="privTitle">حریم خصوصی و شرایط استفاده</h2>
+        <button class="btn" id="privClose" type="button">بستن</button>
+      </div>
+      <div class="priv">
+        <h3>چه اطلاعاتی نگه‌داری می‌شود؟</h3>
+        <p>ایمیل شما، رمز عبور (فقط به‌صورت رمزنگاری‌شده و توسط سرویس ورود)، و آنچه خودتان وارد می‌کنید: لیست‌ها، کالاها، قفسه‌ها، قیمت‌ها و تاریخچه خریدها.</p>
+        <h3>چه کسی آن را می‌بیند؟</h3>
+        <p>فقط اعضای هر لیست. اگر عضو یک لیست مشترک باشید، اعضای همان لیست ایمیل شما و کالاهای لیست را می‌بینند. لیست‌های دیگر شما برای آن‌ها قابل مشاهده نیست. مدیر سرویس از نظر فنی به پایگاه داده دسترسی دارد، ولی اطلاعات شما را برای تبلیغات یا فروش استفاده نمی‌کند.</p>
+        <h3>کجا نگهداری می‌شود؟</h3>
+        <p>اطلاعات روی سرورهای سرویس Supabase ذخیره می‌شود. نمونه‌ای از اطلاعات لیست‌ها برای سرعت بیشتر روی دستگاه شما هم نگه داشته می‌شود و با خروج از حساب پاک می‌شود. برنامه ردیاب تبلیغاتی یا تحلیلی ندارد.</p>
+        <h3>حذف اطلاعات</h3>
+        <p>هر زمان می‌توانید از «حساب کاربری» نسخه پشتیبان بگیرید یا حساب خود را حذف کنید. نسخه‌های پشتیبان پایگاه داده ممکن است تا مدتی پس از حذف نزد ارائه‌دهنده سرور باقی بمانند.</p>
+        <h3>شرایط استفاده</h3>
+        <p>این برنامه همان‌طور که هست و بدون هیچ ضمانتی ارائه می‌شود. برای اطلاعات مهم نسخه پشتیبان نگه دارید. لینک دعوت را فقط برای افراد مورد اعتماد بفرستید، زیرا هر کس آن را باز کند و وارد شود به لیست دسترسی کامل پیدا می‌کند.</p>
+      </div>
+    </div>
+  </dialog>
+
   <dialog class="sheet" id="membersDlg" aria-labelledby="membersTitle">
     <div class="sheet-in">
       <div class="sheet-head">
@@ -538,7 +606,10 @@ create table if not exists price_history (
       </form>
       <div class="acct">
         <span class="acct-mail" id="acctEmail" dir="ltr"></span>
-        <button class="btn" id="signOutBtn" type="button">خروج از حساب</button>
+        <span class="acct-btns">
+          <button class="btn" id="acctBtn" type="button">حساب کاربری</button>
+          <button class="btn" id="signOutBtn" type="button">خروج</button>
+        </span>
       </div>
     </div>
   </dialog>
@@ -896,6 +967,29 @@ exception when others then
   raise notice 'realtime publication not updated: %', sqlerrm;
 end $$;
 
+-- 9) Account deletion (called from the app: Account > Delete my account)
+--    Lists you own that other people also belong to are handed to their longest-standing member.
+--    Every other list you own, with all its data, is deleted together with your account.
+create or replace function delete_my_account()
+returns void
+language plpgsql security definer set search_path = public as $$
+declare l record; nxt uuid;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  for l in select id from lists where owner_id = auth.uid() loop
+    select m.user_id into nxt from list_members m
+      where m.list_id = l.id and m.user_id <> auth.uid()
+      order by m.created_at limit 1;
+    if nxt is not null then
+      update lists set owner_id = nxt where id = l.id;
+      update list_members set role = 'owner' where list_id = l.id and user_id = nxt;
+    end if;
+  end loop;
+  delete from auth.users where id = auth.uid();
+end $$;
+revoke all on function delete_my_account() from public, anon;
+grant execute on function delete_my_account() to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- ---------------------------------------------------------------------
@@ -995,6 +1089,32 @@ begin
 exception when others then
   raise notice 'realtime publication not updated: %', sqlerrm;
 end $$;
+
+notify pgrst, 'reload schema';`;
+
+    // Only the account-deletion function.
+    const ACCOUNT_SQL = `-- 9) Account deletion (called from the app: Account > Delete my account)
+--    Lists you own that other people also belong to are handed to their longest-standing member.
+--    Every other list you own, with all its data, is deleted together with your account.
+create or replace function delete_my_account()
+returns void
+language plpgsql security definer set search_path = public as $$
+declare l record; nxt uuid;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  for l in select id from lists where owner_id = auth.uid() loop
+    select m.user_id into nxt from list_members m
+      where m.list_id = l.id and m.user_id <> auth.uid()
+      order by m.created_at limit 1;
+    if nxt is not null then
+      update lists set owner_id = nxt where id = l.id;
+      update list_members set role = 'owner' where list_id = l.id and user_id = nxt;
+    end if;
+  end loop;
+  delete from auth.users where id = auth.uid();
+end $$;
+revoke all on function delete_my_account() from public, anon;
+grant execute on function delete_my_account() to authenticated;
 
 notify pgrst, 'reload schema';`;
 
@@ -2712,7 +2832,7 @@ notify pgrst, 'reload schema';`;
 
     function leaveApp() {
       unsubscribeRealtime();
-      ['listsDlg', 'membersDlg', 'shelfDlg', 'histDlg', 'repDlg', 'endDlg'].forEach(id => { const d = $(id); if (d && d.open) d.close(); });
+      ['listsDlg', 'membersDlg', 'acctDlg', 'shelfDlg', 'histDlg', 'repDlg', 'endDlg'].forEach(id => { const d = $(id); if (d && d.open) d.close(); });
       clearCaches();
       state.user = null; state.lists = []; state.listId = null;
       resetListState();
@@ -2801,6 +2921,80 @@ notify pgrst, 'reload schema';`;
     $('signOutBtn').addEventListener('click', async () => {
       $('listsDlg').close();
       await db.auth.signOut();
+    });
+
+    // ---------- Account: password, backup, deletion, privacy ----------
+    $('authPrivacy').addEventListener('click', () => $('privDlg').showModal());
+    $('acctPrivacy').addEventListener('click', () => $('privDlg').showModal());
+    $('privClose').addEventListener('click', () => $('privDlg').close());
+    $('acctClose').addEventListener('click', () => $('acctDlg').close());
+    ['privDlg', 'acctDlg'].forEach(id => $(id).addEventListener('click', e => { if (e.target === $(id)) $(id).close(); }));
+
+    $('acctBtn').addEventListener('click', () => {
+      $('acctMail2').textContent = state.user ? state.user.email : '';
+      $('pwNew').value = ''; $('delConfirm').value = ''; $('delBtn').disabled = true; $('acctSqlBox').hidden = true;
+      $('acctDlg').showModal();
+    });
+
+    $('pwForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const pw = $('pwNew').value;
+      if (pw.length < 6) { toast('رمز عبور باید دست‌کم ۶ نویسه باشد.', 'error'); return; }
+      const { error } = await db.auth.updateUser({ password: pw });
+      if (error) { toast(authErrorText(error), 'error'); return; }
+      $('pwNew').value = '';
+      toast('رمز عبور تغییر کرد.');
+    });
+
+    async function exportData() {
+      const btn = $('exportBtn');
+      btn.disabled = true;
+      toast('در حال آماده‌سازی نسخه پشتیبان…');
+      try {
+        const out = { app: 'shopping-list', format: 1, exported_at: new Date().toISOString(), account: state.user ? state.user.email : '', lists: [] };
+        for (const l of state.lists) {
+          const q = (table) => fetchAll(() => db.from(table).select('*').eq('list_id', l.id).order('id'));
+          const [items, shelves, price_history, sessions, session_items] =
+            await Promise.all([q('items'), q('shelves'), q('price_history'), q('sessions'), q('session_items')]);
+          out.lists.push({ list: { id: l.id, name: l.name }, items, shelves, price_history, sessions, session_items });
+        }
+        const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `shopping-list-backup-${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        toast('نسخه پشتیبان دانلود شد.');
+      } catch (e) {
+        console.error(e);
+        toast('تهیه نسخه پشتیبان انجام نشد. اتصال اینترنت را بررسی کنید.', 'error');
+      }
+      btn.disabled = false;
+    }
+    $('exportBtn').addEventListener('click', exportData);
+
+    $('delConfirm').addEventListener('input', () => {
+      const want = state.user ? state.user.email.trim().toLowerCase() : '';
+      $('delBtn').disabled = !want || $('delConfirm').value.trim().toLowerCase() !== want;
+    });
+    $('acctSqlText').textContent = ACCOUNT_SQL;
+    $('acctSqlCopy').addEventListener('click', async () => toast(await copyText(ACCOUNT_SQL) ? 'کپی شد. آن را در SQL Editor اجرا کنید.' : 'کپی نشد. متن را دستی کپی کنید.'));
+
+    $('delBtn').addEventListener('click', async () => {
+      const btn = $('delBtn');
+      btn.disabled = true;
+      const r = await db.rpc('delete_my_account');
+      if (r.error) {
+        console.error(r.error);
+        if (r.error.code === 'PGRST202' || /delete_my_account|schema cache/.test(r.error.message || '')) $('acctSqlBox').hidden = false;
+        else toast('حذف حساب انجام نشد. دوباره تلاش کنید.', 'error');
+        btn.disabled = false;
+        return;
+      }
+      ['acctDlg', 'listsDlg'].forEach(id => { if ($(id).open) $(id).close(); });
+      try { await db.auth.signOut({ scope: 'local' }); } catch (e) { /* the user no longer exists server-side */ }
+      leaveApp();
+      toast('حساب و اطلاعات شما حذف شد.');
     });
 
     // ---------- Sharing (members + invite links) ----------
