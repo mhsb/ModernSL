@@ -89,8 +89,12 @@ create table if not exists price_history (
   <meta name="color-scheme" content="light dark">
   <title>لیست خرید هوشمند</title>
 
-  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v3.3.0/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <!-- Font loads without blocking the first paint (system font is shown meanwhile). -->
+  <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v3.3.0/Vazirmatn-font-face.css" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v3.3.0/Vazirmatn-font-face.css"></noscript>
+  <!-- Pinned version + defer: the page paints first, the library loads in parallel. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
 
   <style>
     :root {
@@ -399,15 +403,26 @@ create table if not exists price_history (
     .acct { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
     .acct-mail { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
 
+    .splash { display: none; min-height: 100vh; min-height: 100dvh; place-items: center; color: var(--muted); }
+    html.has-session .splash { display: grid; }
+    html.has-session .auth { display: none; }
+    .invite-box { margin-top: 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; background: var(--tint); }
+    .invite-box .field { direction: ltr; font-size: 13px; }
+    .hs-items .btn-link { color: var(--accent); }
+    .hs-items .btn-link.danger { color: var(--danger); }
+
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
 <body>
-  <section class="auth" id="auth" hidden>
+  <script>try { if (Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-token$/.test(k); })) document.documentElement.classList.add('has-session'); } catch (e) {}</script>
+  <div class="splash" id="splash" aria-live="polite">در حال بارگذاری…</div>
+  <section class="auth" id="auth">
     <div class="auth-card">
       <h1>لیست خرید</h1>
       <p class="auth-sub" id="authSub">برای شروع وارد شوید</p>
-      <form id="authForm" autocomplete="on">
+      <p class="auth-msg ok" id="authJoin" hidden>برای پیوستن به لیست مشترک، وارد شوید یا ثبت‌نام کنید.</p>
+      <form id="authForm" autocomplete="on" onsubmit="return false">
         <label for="authEmail">ایمیل</label>
         <input class="field" id="authEmail" type="email" inputmode="email" autocomplete="email" dir="ltr" required>
         <div id="authPassWrap">
@@ -415,7 +430,7 @@ create table if not exists price_history (
           <input class="field" id="authPass" type="password" autocomplete="current-password" dir="ltr" minlength="6">
         </div>
         <p class="auth-msg" id="authMsg" role="alert" hidden></p>
-        <button class="btn btn-primary" id="authSubmit" type="submit">ورود</button>
+        <button class="btn btn-primary" id="authSubmit" type="submit" disabled>ورود</button>
       </form>
       <div class="auth-links">
         <button class="btn-link neutral" id="authToggle" type="button">حساب ندارید؟ ثبت‌نام</button>
@@ -499,6 +514,17 @@ create table if not exists price_history (
   </div>
   </div>
 
+  <dialog class="sheet" id="membersDlg" aria-labelledby="membersTitle">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="membersTitle">اعضای لیست</h2>
+        <button class="btn" id="membersClose" type="button">بستن</button>
+      </div>
+      <p class="hint" id="membersListName"></p>
+      <div id="membersBody"></div>
+    </div>
+  </dialog>
+
   <dialog class="sheet" id="listsDlg" aria-labelledby="listsTitle">
     <div class="sheet-in">
       <div class="sheet-head">
@@ -575,10 +601,26 @@ create table if not exists price_history (
   <div class="toast" id="toast" popover="manual" role="status" aria-live="polite"></div>
 
   <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof supabase === 'undefined') {            // CDN blocked or offline
+      document.documentElement.classList.remove('has-session');
+      const m = document.getElementById('authMsg');
+      m.hidden = false;
+      m.textContent = 'بارگذاری برنامه کامل نشد. اینترنت را بررسی کنید و صفحه را دوباره باز کنید.';
+      return;
+    }
     // === تنظیمات Supabase (از دیتابیس شما) ===
     const SUPABASE_URL = "https://geyyswjrbpgearzwvbuj.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdleXlzd2pyYnBnZWFyend2YnVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1NzAxMzQsImV4cCI6MjEwNzE0NjEzNH0.m42-eMsc5ZCucbr81Y46sWinChPKhNajv6lWoVZHjLE";
 
+    // An invite link looks like  page.html#join=TOKEN . Keep the token (it must survive sign-up / e-mail
+    // confirmation) and clean the address bar.
+    (function captureJoin() {
+      const m = location.hash.match(/[#&]join=([A-Za-z0-9]+)/);
+      if (!m || /access_token/.test(location.hash)) return;
+      try { localStorage.setItem('shop.pendingJoin', m[1]); } catch (e) { /* ignore */ }
+      history.replaceState(null, '', location.pathname + location.search);
+    })();
     // Detect the "reset password" link before the client cleans the URL.
     const RECOVERY_LINK = /type=recovery/.test(location.hash);
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -762,12 +804,199 @@ begin
 end $$;
 revoke all on function migrate_legacy_data(text) from public, anon, authenticated;
 
+-- 8) Sharing: invite links, members, and live updates
+create table if not exists list_invites (
+  id bigint generated by default as identity primary key,
+  list_id bigint not null references lists(id) on delete cascade,
+  token text not null unique,
+  created_by uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '7 days'
+);
+create index if not exists list_invites_list_idx on list_invites (list_id);
+alter table list_invites enable row level security;
+
+-- Only the list owner can see / revoke invites. Invites are created through create_invite() below.
+drop policy if exists invites_owner on list_invites;
+create policy invites_owner on list_invites for all to authenticated
+  using (exists (select 1 from lists l where l.id = list_invites.list_id and l.owner_id = auth.uid()))
+  with check (false);
+
+-- A member can leave a list; the owner can remove other members. The owner row is never deletable.
+drop policy if exists members_delete on list_members;
+create policy members_delete on list_members for delete to authenticated using (
+  role <> 'owner' and (
+    user_id = auth.uid()
+    or exists (select 1 from lists l where l.id = list_members.list_id and l.owner_id = auth.uid())
+  )
+);
+
+create or replace function create_invite(lid bigint)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare t text;
+begin
+  if not exists (select 1 from lists where id = lid and owner_id = auth.uid()) then
+    raise exception 'only the owner can invite';
+  end if;
+  delete from list_invites where expires_at < now();
+  t := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  insert into list_invites (list_id, token, created_by) values (lid, t, auth.uid());
+  return t;
+end $$;
+revoke all on function create_invite(bigint) from public, anon;
+grant execute on function create_invite(bigint) to authenticated;
+
+create or replace function join_list(invite_token text)
+returns lists
+language plpgsql security definer set search_path = public as $$
+declare inv list_invites; l lists;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  select * into inv from list_invites where token = invite_token and expires_at > now();
+  if not found then raise exception 'invalid or expired invite'; end if;
+  if (select count(*) from list_members where list_id = inv.list_id) >= 10
+     and not exists (select 1 from list_members where list_id = inv.list_id and user_id = auth.uid()) then
+    raise exception 'list is full';
+  end if;
+  insert into list_members (list_id, user_id, role) values (inv.list_id, auth.uid(), 'editor')
+    on conflict (list_id, user_id) do nothing;
+  select * into l from lists where id = inv.list_id;
+  return l;
+end $$;
+revoke all on function join_list(text) from public, anon;
+grant execute on function join_list(text) to authenticated;
+
+-- Members of a list (with e-mail) - visible only to other members of the same list.
+create or replace function list_member_info(lid bigint)
+returns table (member_id uuid, member_email text, member_role text)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_list_member(lid) then raise exception 'not a member'; end if;
+  return query
+    select m.user_id, u.email::text, m.role
+    from list_members m join auth.users u on u.id = m.user_id
+    where m.list_id = lid
+    order by m.created_at;
+end $$;
+revoke all on function list_member_info(bigint) from public, anon;
+grant execute on function list_member_info(bigint) to authenticated;
+
+-- Live updates between members (Supabase Realtime)
+do $$
+declare t text;
+begin
+  foreach t in array array['items', 'shelves'] loop
+    if not exists (select 1 from pg_publication_tables
+                   where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+exception when others then
+  raise notice 'realtime publication not updated: %', sqlerrm;
+end $$;
+
 notify pgrst, 'reload schema';
 
 -- ---------------------------------------------------------------------
 -- AFTER you have signed up in the app, to keep your old data run (once):
 --   select migrate_legacy_data('your-email@example.com');
 -- ---------------------------------------------------------------------`;
+
+    // Only the sharing part (for databases that already ran the earlier setup).
+    const PHASE2_SQL = `-- 8) Sharing: invite links, members, and live updates
+create table if not exists list_invites (
+  id bigint generated by default as identity primary key,
+  list_id bigint not null references lists(id) on delete cascade,
+  token text not null unique,
+  created_by uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '7 days'
+);
+create index if not exists list_invites_list_idx on list_invites (list_id);
+alter table list_invites enable row level security;
+
+-- Only the list owner can see / revoke invites. Invites are created through create_invite() below.
+drop policy if exists invites_owner on list_invites;
+create policy invites_owner on list_invites for all to authenticated
+  using (exists (select 1 from lists l where l.id = list_invites.list_id and l.owner_id = auth.uid()))
+  with check (false);
+
+-- A member can leave a list; the owner can remove other members. The owner row is never deletable.
+drop policy if exists members_delete on list_members;
+create policy members_delete on list_members for delete to authenticated using (
+  role <> 'owner' and (
+    user_id = auth.uid()
+    or exists (select 1 from lists l where l.id = list_members.list_id and l.owner_id = auth.uid())
+  )
+);
+
+create or replace function create_invite(lid bigint)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare t text;
+begin
+  if not exists (select 1 from lists where id = lid and owner_id = auth.uid()) then
+    raise exception 'only the owner can invite';
+  end if;
+  delete from list_invites where expires_at < now();
+  t := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  insert into list_invites (list_id, token, created_by) values (lid, t, auth.uid());
+  return t;
+end $$;
+revoke all on function create_invite(bigint) from public, anon;
+grant execute on function create_invite(bigint) to authenticated;
+
+create or replace function join_list(invite_token text)
+returns lists
+language plpgsql security definer set search_path = public as $$
+declare inv list_invites; l lists;
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  select * into inv from list_invites where token = invite_token and expires_at > now();
+  if not found then raise exception 'invalid or expired invite'; end if;
+  if (select count(*) from list_members where list_id = inv.list_id) >= 10
+     and not exists (select 1 from list_members where list_id = inv.list_id and user_id = auth.uid()) then
+    raise exception 'list is full';
+  end if;
+  insert into list_members (list_id, user_id, role) values (inv.list_id, auth.uid(), 'editor')
+    on conflict (list_id, user_id) do nothing;
+  select * into l from lists where id = inv.list_id;
+  return l;
+end $$;
+revoke all on function join_list(text) from public, anon;
+grant execute on function join_list(text) to authenticated;
+
+-- Members of a list (with e-mail) - visible only to other members of the same list.
+create or replace function list_member_info(lid bigint)
+returns table (member_id uuid, member_email text, member_role text)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_list_member(lid) then raise exception 'not a member'; end if;
+  return query
+    select m.user_id, u.email::text, m.role
+    from list_members m join auth.users u on u.id = m.user_id
+    where m.list_id = lid
+    order by m.created_at;
+end $$;
+revoke all on function list_member_info(bigint) from public, anon;
+grant execute on function list_member_info(bigint) to authenticated;
+
+-- Live updates between members (Supabase Realtime)
+do $$
+declare t text;
+begin
+  foreach t in array array['items', 'shelves'] loop
+    if not exists (select 1 from pg_publication_tables
+                   where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t) then
+      execute format('alter publication supabase_realtime add table public.%I', t);
+    end if;
+  end loop;
+exception when others then
+  raise notice 'realtime publication not updated: %', sqlerrm;
+end $$;
+
+notify pgrst, 'reload schema';`;
 
     // ---------- State ----------
     const state = {
@@ -789,6 +1018,7 @@ notify pgrst, 'reload schema';
       user: null,                // signed-in user
       recovery: RECOVERY_LINK,   // opened from a reset-password link
       lists: [],                 // lists the user belongs to
+      memberCounts: new Map(),   // list id -> number of members
       listId: null,              // list currently shown
       hist: { rows: [], loading: false, hasMore: false, open: new Set(), detail: new Map() },
       rep: { range: 'all', loading: false, error: null, data: null, item: '', seq: 0 },
@@ -931,11 +1161,12 @@ notify pgrst, 'reload schema';
       if (!missing.length) return;
       missing.forEach(n => state.adopted.add(n));
       const max = state.shelves.reduce((m, x) => Math.max(m, Number(x.sort_order) || 0), 0);
+      const lid0 = state.listId;
       try {
         const r = await db.from('shelves')
           .upsert(missing.map((name, i) => ({ list_id: state.listId, name, sort_order: max + i + 1 })), { onConflict: 'list_id,name', ignoreDuplicates: true })
           .select();
-        if (!r.error && r.data) state.shelves.push(...r.data);
+        if (!r.error && r.data && lid0 === state.listId) state.shelves.push(...r.data);
       } catch (e) { console.error('adoptShelves:', e); }
     }
 
@@ -983,40 +1214,62 @@ notify pgrst, 'reload schema';
     // ---------- Data ----------
     async function load() {
       if (!state.listId) return;
-      const listAtStart = state.listId;
+      const lid = state.listId;
       try {
-        const [itemsRes, histRes, shelvesRes] = await Promise.all([
-          db.from('items').select('*').eq('list_id', state.listId).order('name'),
-          db.from('price_history').select('item_id, price, recorded_at').eq('list_id', state.listId).order('recorded_at', { ascending: true }),
-          db.from('shelves').select('*').eq('list_id', state.listId),
+        // Only what the screen needs to draw. Price history is fetched afterwards.
+        const [itemsRes, shelvesRes] = await Promise.all([
+          db.from('items').select('*').eq('list_id', lid).order('name'),
+          db.from('shelves').select('*').eq('list_id', lid),
         ]);
+        if (lid !== state.listId) return;                 // the user switched lists meanwhile
         if (itemsRes.error) throw itemsRes.error;
-        if (histRes.error) console.error('price_history:', histRes.error);
 
         state.items = itemsRes.data || [];
         state.shelves = shelvesRes.error ? [] : (shelvesRes.data || []);
         const colsMissing = state.items.length && (state.items[0].in_list === undefined || state.items[0].sort_order === undefined || state.items[0].shelf === undefined);
         if (colsMissing || shelvesRes.error) state.needsMigration = true;
         else if (state.items.length) state.needsMigration = false;
-        if (!shelvesRes.error) await adoptShelves();
         rebuildShelves();
-
-        state.history = new Map();
-        (histRes.data || []).forEach(h => {
-          if (!state.history.has(h.item_id)) state.history.set(h.item_id, []);
-          state.history.get(h.item_id).push(h);
-        });
         state.error = null;
         state.loaded = true;
         [...state.open].forEach(id => { const it = findItem(id); if (!it || !it.in_list) state.open.delete(id); });
         if (state.editing !== null && !findItem(state.editing)) state.editing = null;
+        saveSnapshot();
+        render();
+        if (!shelvesRes.error) adoptShelvesLater(lid);
+        loadPriceHistory(lid);
       } catch (e) {
         console.error('خطا در دریافت اطلاعات:', e);
-        if (listAtStart !== state.listId) return;
+        if (lid !== state.listId) return;
         if (/list_id|does not exist|schema cache/.test((e && e.message) || '')) { state.needsMigration = true; state.loaded = true; }
+        else if (state.loaded) toast('اتصال برقرار نیست. اطلاعات ذخیره‌شده نمایش داده می‌شود.', 'error');
         else state.error = e;
+        render();
       }
-      render();
+    }
+
+    async function adoptShelvesLater(lid) {
+      const before = state.shelves.length;
+      await adoptShelves();
+      if (lid === state.listId && state.shelves.length !== before) { rebuildShelves(); render(); }
+    }
+
+    // Newest 1000 price points (the server caps one request at 1000 rows anyway).
+    async function loadPriceHistory(lid) {
+      try {
+        const r = await db.from('price_history').select('item_id, price, recorded_at')
+          .eq('list_id', lid).order('recorded_at', { ascending: false }).range(0, 999);
+        if (r.error || lid !== state.listId) return;
+        const map = new Map();
+        (r.data || []).slice().reverse().forEach(h => {
+          if (!map.has(h.item_id)) map.set(h.item_id, []);
+          map.get(h.item_id).push(h);
+        });
+        state.history = map;
+        memCache.set(lid, { items: state.items, shelves: state.shelves, history: map });
+        const a = document.activeElement;
+        if (!(a && a.matches && a.matches('input') && a.closest('#lists'))) render();   // never wipe what is being typed
+      } catch (e) { console.error('price_history:', e); }
     }
 
     // ---------- Rendering: list ----------
@@ -2260,9 +2513,14 @@ notify pgrst, 'reload schema';
     }
 
     function showAuth(mode) {
+      document.documentElement.classList.remove('has-session');
+      $('splash').hidden = true;
       $('appRoot').hidden = true;
       $('auth').hidden = false;
       setAuthMode(mode);
+      let pending = false;
+      try { pending = !!localStorage.getItem('shop.pendingJoin'); } catch (e) { /* ignore */ }
+      $('authJoin').hidden = !pending || mode === 'recovery';
     }
 
     async function submitAuth(e) {
@@ -2339,9 +2597,14 @@ notify pgrst, 'reload schema';
     }
 
     async function fetchLists() {
-      const r = await db.from('lists').select('*').order('id');
-      if (r.error) throw r.error;
-      state.lists = r.data || [];
+      const [lr, mr] = await Promise.all([
+        db.from('lists').select('*').order('id'),
+        db.from('list_members').select('list_id'),
+      ]);
+      if (lr.error) throw lr.error;
+      state.lists = lr.data || [];
+      state.memberCounts = new Map();
+      (mr.data || []).forEach(m => state.memberCounts.set(m.list_id, (state.memberCounts.get(m.list_id) || 0) + 1));
     }
 
     async function createListRpc(name) {
@@ -2350,29 +2613,89 @@ notify pgrst, 'reload schema';
       return Array.isArray(r.data) ? r.data[0] : r.data;
     }
 
+    // ---- Local cache: draw the last known data instantly, then refresh in the background ----
+    const memCache = new Map();
+    const snapKey = id => 'shop.snap.' + id;
+    const listsKey = () => 'shop.lists.' + (state.user ? state.user.id : '');
+    function saveSnapshot() {
+      if (!state.listId) return;
+      memCache.set(state.listId, { items: state.items, shelves: state.shelves, history: state.history });
+      try { localStorage.setItem(snapKey(state.listId), JSON.stringify({ items: state.items, shelves: state.shelves })); } catch (e) { /* ignore */ }
+    }
+    function applyCache(id) {
+      let c = memCache.get(id);
+      if (!c) {
+        try { const raw = localStorage.getItem(snapKey(id)); if (raw) c = { ...JSON.parse(raw), history: new Map() }; } catch (e) { c = null; }
+      }
+      if (!c || !Array.isArray(c.items)) return false;
+      state.items = c.items; state.shelves = c.shelves || []; state.history = c.history || new Map();
+      rebuildShelves();
+      state.loaded = true;
+      return true;
+    }
+    function clearCaches() {
+      memCache.clear();
+      try { Object.keys(localStorage).filter(k => /^shop\.(snap|lists)\./.test(k)).forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
+    }
+
     async function selectList(id) {
       state.listId = id;
       saveListId(id);
       resetListState();
       updateListTitle();
       subscribeRealtime();
+      applyCache(id);
       render();
       await load();
     }
 
+    function takePendingJoin() {
+      try { const t = localStorage.getItem('shop.pendingJoin'); if (t) localStorage.removeItem('shop.pendingJoin'); return t; }
+      catch (e) { return null; }
+    }
+    function joinErrorText(e) {
+      const m = String((e && e.message) || '');
+      if (/invalid or expired/.test(m)) return 'این لینک دعوت معتبر نیست یا منقضی شده است.';
+      if (/full/.test(m)) return 'ظرفیت این لیست پر است.';
+      if (e && (e.code === 'PGRST202' || /join_list|schema cache/.test(m))) return 'قابلیت اشتراک‌گذاری هنوز در پایگاه داده فعال نشده است.';
+      return 'پیوستن به لیست انجام نشد.';
+    }
+    async function joinWithToken(tok) {
+      try {
+        const r = await db.rpc('join_list', { invite_token: tok });
+        if (r.error) throw r.error;
+        const l = Array.isArray(r.data) ? r.data[0] : r.data;
+        await fetchLists();
+        toast(`به لیست «${l.name}» پیوستید.`);
+        return l.id;
+      } catch (e) {
+        console.error(e);
+        toast(joinErrorText(e), 'error');
+        return null;
+      }
+    }
+
     async function enterApp() {
       $('auth').hidden = true;
+      $('splash').hidden = true;
+      document.documentElement.classList.remove('has-session');
       $('appRoot').hidden = false;
       $('acctEmail').textContent = state.user ? state.user.email : '';
       resetListState();
+      try { const raw = localStorage.getItem(listsKey()); if (raw) state.lists = JSON.parse(raw); } catch (e) { /* ignore */ }
+      const saved = savedListId();
+      // Known list: draw it and start loading right away, in parallel with the lists query.
+      const quick = saved && state.lists.some(l => l.id === saved) ? selectList(saved) : null;
       try {
         await fetchLists();
-        if (!state.lists.length) {
-          const l = await createListRpc('لیست خرید');
-          state.lists = [l];
-        }
-        const saved = savedListId();
-        await selectList(state.lists.some(l => l.id === saved) ? saved : state.lists[0].id);
+        let joinedId = null;
+        const tok = takePendingJoin();
+        if (tok) joinedId = await joinWithToken(tok);
+        if (!state.lists.length) state.lists = [await createListRpc('لیست خرید')];
+        try { localStorage.setItem(listsKey(), JSON.stringify(state.lists)); } catch (e) { /* ignore */ }
+        const want = [joinedId, saved].find(id => id && state.lists.some(l => l.id === id)) || state.lists[0].id;
+        if (quick && want === state.listId) { updateListTitle(); await quick; }
+        else await selectList(want);
       } catch (e) {
         console.error(e);
         const m = String((e && e.message) || '');
@@ -2380,7 +2703,7 @@ notify pgrst, 'reload schema';
           state.needsMigration = true; state.loaded = true; state.listId = null;
           render();
           $('listsList').innerHTML = '';
-        } else {
+        } else if (!state.loaded) {
           state.error = e; render();
           toast('اتصال برقرار نشد. دوباره تلاش کنید.', 'error');
         }
@@ -2389,7 +2712,8 @@ notify pgrst, 'reload schema';
 
     function leaveApp() {
       unsubscribeRealtime();
-      ['listsDlg', 'shelfDlg', 'histDlg', 'repDlg', 'endDlg'].forEach(id => { const d = $(id); if (d && d.open) d.close(); });
+      ['listsDlg', 'membersDlg', 'shelfDlg', 'histDlg', 'repDlg', 'endDlg'].forEach(id => { const d = $(id); if (d && d.open) d.close(); });
+      clearCaches();
       state.user = null; state.lists = []; state.listId = null;
       resetListState();
       showAuth(state.recovery ? 'recovery' : 'login');
@@ -2402,9 +2726,10 @@ notify pgrst, 'reload schema';
         const active = l.id === state.listId;
         return `<li class="sm-row ${active ? 'is-active' : ''}" data-lid="${l.id}">
           <div class="sm-top"><span class="sm-name">${esc(l.name)}</span>
-            <span class="sm-count">${active ? 'فعلی' : ''}</span></div>
+            <span class="sm-count">${[active ? 'فعلی' : '', mine ? '' : 'دعوت‌شده', (state.memberCounts.get(l.id) || 0) > 1 ? fmt(state.memberCounts.get(l.id)) + ' عضو' : ''].filter(Boolean).join('، ')}</span></div>
           <div class="sm-actions">
             ${active ? '' : '<button class="btn btn-primary" type="button" data-lact="open">باز کردن</button>'}
+            <button class="btn" type="button" data-lact="members">اعضا و دعوت</button>
             ${mine ? '<button class="btn" type="button" data-lact="rename">تغییر نام</button><button class="btn btn-danger" type="button" data-lact="delete">حذف</button>' : ''}
           </div></li>`;
       }).join('');
@@ -2417,7 +2742,7 @@ notify pgrst, 'reload schema';
       try {
         const l = await createListRpc(name);
         state.lists.push(l);
-        await selectList(l.id);
+        selectList(l.id);
         toast('لیست جدید ساخته شد.');
         return true;
       } catch (e) {
@@ -2467,7 +2792,8 @@ notify pgrst, 'reload schema';
       if (!b) return;
       const id = Number(b.closest('.sm-row').dataset.lid);
       switch (b.dataset.lact) {
-        case 'open': await selectList(id); $('listsDlg').close(); break;
+        case 'open': $('listsDlg').close(); selectList(id); break;          // close first: no waiting for the network
+        case 'members': openMembers(id); break;
         case 'rename': renameList(id); break;
         case 'delete': deleteList(id); break;
       }
@@ -2475,6 +2801,157 @@ notify pgrst, 'reload schema';
     $('signOutBtn').addEventListener('click', async () => {
       $('listsDlg').close();
       await db.auth.signOut();
+    });
+
+    // ---------- Sharing (members + invite links) ----------
+    const mem = { listId: null, loading: false, members: [], invites: [], setup: false, link: '' };
+    const inviteLink = token => location.origin + location.pathname + '#join=' + token;
+    const roleText = r => (r === 'owner' ? 'مالک' : 'عضو');
+    async function copyText(t) { try { await navigator.clipboard.writeText(t); return true; } catch (e) { return false; } }
+    const isMissingFn = err => err && (err.code === 'PGRST202' || err.code === 'PGRST205' || /schema cache|list_member_info|list_invites/.test(err.message || ''));
+
+    async function openMembers(id) {
+      const l = state.lists.find(x => x.id === id);
+      if (!l) return;
+      Object.assign(mem, { listId: id, loading: true, members: [], invites: [], setup: false, link: '' });
+      $('membersListName').textContent = l.name;
+      renderMembers();
+      $('membersDlg').showModal();
+      await refreshMembers();
+    }
+
+    async function refreshMembers() {
+      const id = mem.listId;
+      const l = state.lists.find(x => x.id === id);
+      if (!l) return;
+      const mine = state.user && l.owner_id === state.user.id;
+      mem.loading = true;
+      try {
+        const [mr, ir] = await Promise.all([
+          db.rpc('list_member_info', { lid: id }),
+          mine ? db.from('list_invites').select('*').eq('list_id', id).gt('expires_at', nowISO()).order('created_at', { ascending: false })
+               : Promise.resolve({ data: [] }),
+        ]);
+        if (id !== mem.listId) return;
+        const err = mr.error || ir.error;
+        if (err) { if (isMissingFn(err)) mem.setup = true; else throw err; }
+        else { mem.members = mr.data || []; mem.invites = ir.data || []; mem.setup = false; }
+      } catch (e) {
+        console.error(e);
+        toast('اطلاعات اعضا دریافت نشد.', 'error');
+      }
+      mem.loading = false;
+      renderMembers();
+    }
+
+    function renderMembers() {
+      const body = $('membersBody');
+      const l = state.lists.find(x => x.id === mem.listId);
+      if (!l) { body.innerHTML = ''; return; }
+      const mine = state.user && l.owner_id === state.user.id;
+      if (mem.setup) {
+        body.innerHTML = `<div class="empty setup"><p><b>برای اشتراک‌گذاری یک تنظیم ساده لازم است</b></p>
+          <p>دستور زیر را در Supabase بخش SQL Editor اجرا کنید و بعد دوباره امتحان کنید.</p>
+          <pre>${esc(PHASE2_SQL)}</pre>
+          <button class="btn btn-primary" type="button" data-mact="copysql2">کپی دستور</button></div>`;
+        return;
+      }
+      if (mem.loading && !mem.members.length) { body.innerHTML = '<p class="rep-note">در حال بارگذاری…</p>'; return; }
+      let html = '<ul class="shelf-manage">' + mem.members.map(m => {
+        const me = state.user && m.member_id === state.user.id;
+        const canAct = m.member_role !== 'owner' && (mine || me);
+        return `<li class="sm-row" data-uid="${m.member_id}">
+          <div class="sm-top"><span class="sm-name" dir="ltr">${esc(m.member_email)}</span>
+            <span class="sm-count">${roleText(m.member_role)}${me ? '، شما' : ''}</span></div>
+          ${canAct ? `<div class="sm-actions"><button class="btn btn-danger" type="button" data-mact="${me ? 'leave' : 'remove'}">${me ? 'ترک لیست' : 'حذف از لیست'}</button></div>` : ''}
+        </li>`;
+      }).join('') + '</ul>';
+
+      if (mine) {
+        html += `<section class="rep-sec"><h3>دعوت عضو جدید</h3>
+          <p class="rep-note">یک لینک بسازید و برای شخص موردنظر بفرستید. او با باز کردن لینک و ورود یا ثبت‌نام عضو این لیست می‌شود. لینک ۷ روز اعتبار دارد. همه اعضا می‌توانند کالاها را ببینند و ویرایش کنند. حداکثر ۱۰ عضو.</p>
+          <button class="btn btn-primary" type="button" data-mact="invite" style="margin-top:10px">ساخت لینک دعوت</button>`;
+        if (mem.link) {
+          html += `<div class="invite-box"><input class="field" id="inviteLink" readonly value="${esc(mem.link)}" aria-label="لینک دعوت">
+            <div class="sm-actions"><button class="btn" type="button" data-mact="copy">کپی لینک</button>
+            ${navigator.share ? '<button class="btn" type="button" data-mact="share">اشتراک‌گذاری</button>' : ''}</div></div>`;
+        }
+        if (mem.invites.length) {
+          html += `<h3 style="margin-top:18px;font-size:14px">لینک‌های فعال</h3><ul class="hs-items">` + mem.invites.map(i =>
+            `<li data-iid="${i.id}" data-token="${esc(i.token)}"><span>${dtFmt.format(new Date(i.created_at))}</span>
+              <span><button class="btn-link" type="button" data-mact="copyone">کپی</button>
+              <button class="btn-link danger" type="button" data-mact="revoke">لغو</button></span></li>`).join('') + '</ul>';
+        }
+        html += '</section>';
+      } else {
+        html += '<p class="hint">فقط مالک لیست می‌تواند عضو جدید دعوت کند.</p>';
+      }
+      body.innerHTML = html;
+    }
+
+    async function afterMembershipChange() {
+      await fetchLists();
+      renderLists();
+      await refreshMembers();
+    }
+
+    $('membersClose').addEventListener('click', () => $('membersDlg').close());
+    $('membersDlg').addEventListener('click', e => { if (e.target === $('membersDlg')) $('membersDlg').close(); });
+    $('membersBody').addEventListener('click', async e => {
+      const b = e.target.closest('[data-mact]');
+      if (!b) return;
+      const id = mem.listId;
+      const l = state.lists.find(x => x.id === id);
+      if (!l) return;
+      switch (b.dataset.mact) {
+        case 'copysql2':
+          toast(await copyText(PHASE2_SQL) ? 'کپی شد. آن را در SQL Editor اجرا کنید.' : 'کپی نشد. متن را دستی کپی کنید.');
+          break;
+        case 'invite': {
+          b.disabled = true;
+          const r = await db.rpc('create_invite', { lid: id });
+          b.disabled = false;
+          if (r.error) { toast(isMissingFn(r.error) ? 'ابتدا دستور SQL اشتراک‌گذاری را اجرا کنید.' : 'ساخت لینک انجام نشد.', 'error'); break; }
+          mem.link = inviteLink(r.data);
+          await refreshMembers();
+          toast(await copyText(mem.link) ? 'لینک ساخته و کپی شد.' : 'لینک ساخته شد.');
+          break;
+        }
+        case 'copy': toast(await copyText(mem.link) ? 'لینک کپی شد.' : 'کپی نشد. لینک را نگه دارید و دستی کپی کنید.'); break;
+        case 'share':
+          try { await navigator.share({ title: 'دعوت به لیست خرید', text: `به لیست «${l.name}» دعوت شده‌اید:`, url: mem.link }); } catch (err) { /* cancelled */ }
+          break;
+        case 'copyone': {
+          const tok = b.closest('li').dataset.token;
+          toast(await copyText(inviteLink(tok)) ? 'لینک کپی شد.' : 'کپی نشد.');
+          break;
+        }
+        case 'revoke': {
+          const r = await db.from('list_invites').delete().eq('id', Number(b.closest('li').dataset.iid));
+          if (r.error) toast('لغو انجام نشد.', 'error');
+          else { mem.link = ''; toast('لینک لغو شد.'); await refreshMembers(); }
+          break;
+        }
+        case 'remove': {
+          const li = b.closest('li');
+          if (!confirm('این عضو از لیست حذف شود؟')) break;
+          const r = await db.from('list_members').delete().eq('list_id', id).eq('user_id', li.dataset.uid);
+          if (r.error) toast('حذف انجام نشد.', 'error');
+          else { toast('عضو حذف شد.'); await afterMembershipChange(); }
+          break;
+        }
+        case 'leave': {
+          if (!confirm(`از لیست «${l.name}» خارج می‌شوید و دیگر آن را نمی‌بینید. ادامه می‌دهید؟`)) break;
+          const r = await db.from('list_members').delete().eq('list_id', id).eq('user_id', state.user.id);
+          if (r.error) { toast('خروج انجام نشد.', 'error'); break; }
+          $('membersDlg').close(); $('listsDlg').close();
+          state.lists = state.lists.filter(x => x.id !== id);
+          if (!state.lists.length) state.lists = [await createListRpc('لیست خرید')];
+          if (id === state.listId) selectList(state.lists[0].id);
+          toast('از لیست خارج شدید.');
+          break;
+        }
+      }
     });
 
     // ---------- Keep in sync across devices ----------
@@ -2488,10 +2965,22 @@ notify pgrst, 'reload schema';
         load();
       }, 400);
     }
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) softRefresh(); });
+    async function validateLists() {
+      if (!state.user || !state.listId) return;
+      try {
+        await fetchLists();
+        if (!state.lists.some(l => l.id === state.listId)) {
+          toast('دسترسی شما به این لیست برداشته شد.', 'error');
+          if (!state.lists.length) state.lists = [await createListRpc('لیست خرید')];
+          selectList(state.lists[0].id);
+        }
+      } catch (e) { /* offline: ignore */ }
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) { softRefresh(); validateLists(); } });
 
     // ---------- Start ----------
     (async function boot() {
+      $('authSubmit').disabled = false;
       const { data } = await db.auth.getSession();
       state.user = data.session ? data.session.user : null;
       db.auth.onAuthStateChange((event, session) => {
@@ -2506,6 +2995,7 @@ notify pgrst, 'reload schema';
       else if (state.user) enterApp();
       else showAuth('login');
     })();
+  });
   </script>
 </body>
 </html>
