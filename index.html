@@ -87,7 +87,15 @@ create table if not exists price_history (
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="color-scheme" content="light dark">
-  <title>لیست خرید هوشمند</title>
+  <script>document.documentElement.classList.add('js');</script>
+  <title>ایناروبگیر | لیست خرید مشترک</title>
+  <meta name="description" content="ایناروبگیر: لیست خرید زنده و مشترک برای زوج‌ها و خانواده‌ها. تو بنویس، او بگیره.">
+  <meta name="theme-color" content="#1b1f5c">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fa_IR">
+  <meta property="og:title" content="ایناروبگیر | تو بنویس، او بگیره">
+  <meta property="og:description" content="لیست خرید زنده و مشترک. هر کدام چیزی اضافه کنید، دیگری همان لحظه می‌بیند.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234347c9'/%3E%3Cpath d='M17 34l10 10 20-23' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='49' cy='15' r='6' fill='%23ffb300'/%3E%3C/svg%3E">
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <!-- Font loads without blocking the first paint (system font is shown meanwhile). -->
@@ -97,41 +105,22 @@ create table if not exists price_history (
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
 
   <style>
+    /* ===== Brand palette: indigo + amber =====
+       --accent = brand indigo   --saffron = amber accent   --foot = deep indigo band   --c1..--c6 = shelf / person colours */
     :root {
-      --bg: #f1f3ee;
-      --surface: #fbfcf9;
-      --tint: #f0f4ee;
-      --ink: #16241d;
-      --muted: #5f6f66;
-      --line: #dde3da;
-      --accent: #1f6b4f;
-      --accent-ink: #ffffff;
-      --danger: #b4402f;
-      --danger-solid: #b4402f;
-      --up: #b4402f;
-      --down: #1f6b4f;
-      --foot: #14382a;
-      --foot-ink: #f3f1e7;
-      --saffron: #f2c14e;
-      --focus: #c98a0c;
-      --dock-h: 150px;
+      --dock-h: 150px; --danger-solid: #b4402f;
+      --bg: #f2f2fa; --surface: #fcfcff; --tint: #e9e9f7; --ink: #171a3a; --muted: #5d6086; --line: #dcdcef;
+      --accent: #4347c9; --accent-ink: #ffffff; --brand2: #6f73ee;
+      --foot: #1b1f5c; --foot-ink: #f0efff; --saffron: #ffb300; --saffron-ink: #2b1d00; --focus: #d98e00;
+      --danger: #b4402f; --up: #b4402f; --down: #1f8a4c;
+      --c1: #ffb300; --c2: #ef5da8; --c3: #20b2aa; --c4: #ff7043; --c5: #5c9ce6; --c6: #8bc34a;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #0f1713;
-        --surface: #16211b;
-        --tint: #1a2720;
-        --ink: #e8efe9;
-        --muted: #93a398;
-        --line: #26352c;
-        --accent: #4fb38a;
-        --accent-ink: #08140e;
-        --danger: #ee8a78;
-        --danger-solid: #c4513f;
-        --up: #ee8a78;
-        --down: #4fb38a;
-        --foot: #0a120e;
-        --focus: #f2c14e;
+        --bg: #0e0f23; --surface: #171937; --tint: #1d2045; --ink: #e9e9ff; --muted: #9a9dc8; --line: #292c58;
+        --accent: #8d91ff; --accent-ink: #0b0c26; --brand2: #b3b6ff;
+        --foot: #090a1c; --saffron: #ffbf33; --focus: #ffbf33;
+        --danger: #ee8a78; --up: #ee8a78; --down: #4fc08a; --danger-solid: #c4513f;
       }
     }
 
@@ -410,26 +399,338 @@ create table if not exists price_history (
 
     .splash { display: none; min-height: 100vh; min-height: 100dvh; place-items: center; color: var(--muted); }
     html.has-session .splash { display: grid; }
-    html.has-session .auth { display: none; }
+    html.has-session #welcome { display: none; }
     .invite-box { margin-top: 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 12px; background: var(--tint); }
     .invite-box .field { direction: ltr; font-size: 13px; }
     .hs-items .btn-link { color: var(--accent); }
     .hs-items .btn-link.danger { color: var(--danger); }
 
-    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    /* ---------- Welcome page ---------- */
+    .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+    .logo { width: 34px; height: 34px; flex: none; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; }
+    .brand b { font-weight: 800; letter-spacing: -0.01em; }
+    .brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .brand-row .logo { width: 40px; height: 40px; }
+    .brand-name { font-size: 24px; font-weight: 800; }
+    .topbar { position: sticky; top: 0; z-index: 4; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top); }
+    .topbar-in { display: flex; align-items: center; justify-content: space-between; min-height: 58px; }
+
+    .hero { background: var(--foot); color: #f3f1e7; padding: 36px 0 44px; overflow: hidden; }
+    .hero-in { display: grid; gap: 34px; }
+    .eyebrow { margin: 0 0 10px; font-size: 14px; color: var(--saffron); font-weight: 600; }
+    .hero h1 { margin: 0; font-size: clamp(38px, 11vw, 58px); line-height: 1.25; font-weight: 800; letter-spacing: -0.02em; }
+    .hero h1 span { color: var(--saffron); }
+    .lead { margin: 16px 0 0; font-size: 17px; line-height: 2; opacity: .92; max-width: 34em; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+    .cta-row.center { justify-content: center; }
+    .cta { min-height: 52px; padding: 10px 22px; border-radius: 14px; border: 2px solid var(--saffron); background: var(--saffron); color: #2a2208; font: inherit; font-size: 16px; font-weight: 800; }
+    .cta.ghost { background: transparent; color: #f3f1e7; border-color: rgba(255,255,255,.35); font-weight: 600; }
+    .cta.solid { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .fine { margin: 12px 0 0; font-size: 13px; opacity: .7; }
+
+    .mock-wrap { position: relative; max-width: 360px; width: 100%; margin: 0 auto; padding-top: 22px; }
+    .bubble { position: absolute; top: 0; inset-inline-start: 10px; z-index: 2; padding: 8px 16px; border-radius: 18px 18px 18px 4px; background: var(--saffron); color: #2a2208; font-weight: 800; font-size: 15px; transform: rotate(-3deg); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+    .mock { position: relative; padding: 14px 14px 18px; border-radius: 22px; background: var(--surface); color: var(--ink); box-shadow: 0 24px 50px rgba(0,0,0,.35); transform: rotate(1.5deg); }
+    .mock-bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 4px 10px; font-size: 15px; }
+    .mock-bar span { font-size: 12px; color: var(--muted); }
+    .mock-shelf { margin: 8px 4px 2px; font-size: 12px; font-weight: 700; color: var(--muted); }
+    .mock-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-top: 1px solid var(--line); font-size: 15px; }
+    .mock-row span { flex: 1; }
+    .mock-row em { font-style: normal; font-size: 12px; color: var(--muted); }
+    .mock-tick { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--accent); }
+    .mock-row.r1 .mock-tick { background: var(--accent); box-shadow: inset 0 0 0 4px var(--surface); }
+    .mock-row.r1 span { text-decoration: line-through; color: var(--muted); }
+    .mock-note { position: absolute; inset-inline-end: -8px; bottom: -14px; padding: 8px 14px; border-radius: 14px; background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 700; box-shadow: 0 8px 20px rgba(0,0,0,.3); }
+    @media (prefers-reduced-motion: no-preference) {
+      .mock-row.r1 .mock-tick { animation: tickOn 7s infinite; }
+      .mock-row.r1 span { animation: strike 7s infinite; }
+      .mock-note { animation: noteIn 7s infinite; }
+    }
+    @keyframes tickOn { 0%, 28% { background: transparent; box-shadow: none; } 34%, 92% { background: var(--accent); box-shadow: inset 0 0 0 4px var(--surface); } 100% { background: transparent; box-shadow: none; } }
+    @keyframes strike { 0%, 28% { text-decoration-color: transparent; color: var(--ink); } 34%, 92% { text-decoration-color: currentColor; color: var(--muted); } 100% { text-decoration-color: transparent; color: var(--ink); } }
+    @keyframes noteIn { 0%, 30% { opacity: 0; transform: translateY(10px); } 38%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(10px); } }
+
+    .land-sec { padding: 52px 0; }
+    .land-sec.alt { background: var(--tint); border-block: 1px solid var(--line); }
+    .land-sec h2, .final-title h2 { margin: 0 0 22px; font-size: 26px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.5; }
+    .pains { display: grid; gap: 12px; }
+    .pain { padding: 16px 18px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+    .pain b { font-size: 17px; }
+    .pain p { margin: 6px 0 0; color: var(--muted); font-size: 15px; line-height: 1.9; }
+    .feats { display: grid; gap: 14px; }
+    .feat { padding: 18px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+    .feat svg { width: 30px; height: 30px; padding: 6px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); box-sizing: content-box; }
+    .feat h3 { margin: 12px 0 4px; font-size: 18px; }
+    .feat p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.95; }
+    .story { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+    .story li { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: start; }
+    .story time { padding: 4px 0; border-radius: 10px; background: var(--foot); color: var(--saffron); text-align: center; font-weight: 800; font-size: 15px; }
+    .story p { margin: 0; line-height: 1.95; }
+    .steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 14px; }
+    .steps li { counter-increment: s; position: relative; padding: 4px 56px 4px 0; min-height: 44px; }
+    .steps li::before { content: counter(s, persian); position: absolute; inset-inline-start: auto; right: 0; top: 0; width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; font-size: 18px; }
+    .steps b { display: block; font-size: 17px; }
+    .steps span { color: var(--muted); font-size: 15px; }
+    .faq details { border-top: 1px solid var(--line); padding: 4px 0; }
+    .faq details:last-child { border-bottom: 1px solid var(--line); }
+    .faq summary { cursor: pointer; padding: 14px 0; font-weight: 700; font-size: 16px; }
+    .faq p { margin: 0 0 14px; color: var(--muted); line-height: 1.95; font-size: 15px; }
+    .final-title { padding-top: 12px; text-align: center; }
+    #welcome:not(.auth-only) .auth { min-height: 0; padding-top: 0; padding-bottom: 64px; }
+    html.invited #welcome .landing, #welcome.auth-only .landing { display: none; }
+    html.invited #welcome .auth, #welcome.auth-only .auth { min-height: 100vh; min-height: 100dvh; padding-top: 24px; }
+    @media (min-width: 760px) {
+      .hero-in { grid-template-columns: 1.1fr .9fr; align-items: center; }
+      .pains, .feats { grid-template-columns: 1fr 1fr; }
+      .pains { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* ============ v8: colour, depth & motion ============ */
+    body::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(60vmax 40vmax at 105% -10%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 62%),
+        radial-gradient(50vmax 36vmax at -10% 6%, color-mix(in srgb, var(--saffron) 14%, transparent), transparent 62%); }
+    .logo rect { fill: var(--accent); }
+    .logo circle { fill: var(--saffron); }
+    .btn, .tool, .cta, .chip, .uc-tabs button, .add-btn, .toggle { transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease, border-color .2s ease; }
+    .btn:active, .tool:active, .cta:active, .chip:active, .uc-tabs button:active, .add-btn:active, .toggle:active { transform: scale(.96); }
+    .btn-primary, .add-btn { background: linear-gradient(135deg, var(--accent), var(--brand2)); border-color: transparent; box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent); }
+    .field { transition: box-shadow .2s ease, border-color .2s ease; }
+    .field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+
+    .summary { position: relative; overflow: hidden;
+      background: linear-gradient(135deg, var(--foot) 0%, color-mix(in srgb, var(--foot) 52%, var(--accent)) 100%);
+      box-shadow: 0 12px 30px color-mix(in srgb, var(--foot) 38%, transparent); }
+    .summary > * { position: relative; z-index: 1; }
+    .summary::after { content: ''; position: absolute; inset-inline-start: -36px; top: -46px; width: 150px; height: 150px; border-radius: 50%;
+      background: radial-gradient(circle, color-mix(in srgb, var(--saffron) 38%, transparent), transparent 70%); animation: floaty 9s ease-in-out infinite; z-index: 0; }
+    .summary .bar i { background: linear-gradient(90deg, var(--saffron), color-mix(in srgb, var(--saffron) 45%, #fff)); }
+    .lists.busy { opacity: 1; pointer-events: none; }
+    .lists.swap { animation: swapIn .38s cubic-bezier(.2,.8,.2,1); }
+    @keyframes swapIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+    .tool { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .tool .ti { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; color: var(--ic); background: color-mix(in srgb, var(--ic) 17%, transparent); }
+    .tool .ti svg { width: 16px; height: 16px; }
+
+    .shelf { --sc: var(--accent); }
+    .shelf-title::before { background: var(--sc); }
+    .shelf .list { border-inline-start: 4px solid var(--sc); }
+    .tick .circle { border-color: var(--sc, var(--accent)); }
+    .is-done .tick .circle { background: var(--sc, var(--accent)); border-color: var(--sc, var(--accent)); }
+    .tag { background: color-mix(in srgb, var(--sc, var(--accent)) 16%, var(--surface)); border-color: color-mix(in srgb, var(--sc, var(--accent)) 42%, var(--line)); }
+    .chip:nth-child(6n+1) { --cc: var(--c1); } .chip:nth-child(6n+2) { --cc: var(--c2); } .chip:nth-child(6n+3) { --cc: var(--c3); }
+    .chip:nth-child(6n+4) { --cc: var(--c4); } .chip:nth-child(6n+5) { --cc: var(--c5); } .chip:nth-child(6n) { --cc: var(--c6); }
+    .chip { border-color: color-mix(in srgb, var(--cc, var(--accent)) 55%, var(--line)); background: color-mix(in srgb, var(--cc, var(--accent)) 13%, var(--surface)); }
+    .stat:nth-child(1) { border-top: 4px solid var(--c1); } .stat:nth-child(2) { border-top: 4px solid var(--c4); }
+    .stat:nth-child(3) { border-top: 4px solid var(--c5); } .stat:nth-child(4) { border-top: 4px solid var(--c3); }
+
+    /* row feedback (only the row that changed animates) */
+    @keyframes rowIn { from { opacity: 0; transform: translateX(26px) scale(.98); background: color-mix(in srgb, var(--saffron) 38%, transparent); } to { opacity: 1; transform: none; background: transparent; } }
+    @keyframes rowLand { 0% { opacity: 0; transform: translateY(-16px); } 100% { opacity: 1; transform: none; } }
+    @keyframes tickPop { 0% { transform: scale(.55); } 55% { transform: scale(1.28); } 100% { transform: scale(1); } }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    .row.fx-add, .row.fx-back { animation: rowIn .55s cubic-bezier(.2,.8,.2,1); }
+    .row.fx-done { animation: rowLand .45s cubic-bezier(.2,.8,.2,1); }
+    .fx-done .tick .circle { animation: tickPop .5s cubic-bezier(.2,.9,.3,1.3); }
+    .fx-done .tick svg path { stroke-dasharray: 16; stroke-dashoffset: 16; animation: draw .35s .12s ease forwards; }
+
+    dialog.sheet[open] { animation: sheetUp .34s cubic-bezier(.2,.85,.25,1); }
+    dialog.sheet[open]::backdrop { animation: fadeIn .25s ease; }
+    @keyframes sheetUp { from { transform: translateY(46px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .toast { transition: transform .4s cubic-bezier(.2,1.25,.4,1); }
+    .sugg:not([hidden]) { animation: sugIn .16s ease; }
+    @keyframes sugIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .empty:not(.setup)::before { content: '✓'; display: grid; place-items: center; width: 58px; height: 58px; margin: 0 auto 14px; border-radius: 18px; font-size: 28px; font-weight: 800;
+      color: var(--accent-ink); background: linear-gradient(135deg, var(--accent), var(--brand2)); animation: bob 3.2s ease-in-out infinite; }
+    @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-7px) rotate(4deg); } }
+    @keyframes floaty { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(18px, -22px); } }
+
+    .confetti { position: fixed; inset: 0; z-index: 20; pointer-events: none; overflow: hidden; }
+    .confetti i { position: absolute; top: -16px; left: var(--x); width: 9px; height: 15px; border-radius: 3px; opacity: 0;
+      animation: fall 1.9s var(--d) cubic-bezier(.25,.6,.35,1) forwards; }
+    @keyframes fall { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: .95; transform: translate(var(--dx), 108vh) rotate(var(--r)); } }
+
+
+    /* ---------- welcome page: colour & motion ---------- */
+    .hero { color: var(--foot-ink); position: relative; isolation: isolate;
+      background: radial-gradient(80% 70% at 88% 0%, color-mix(in srgb, var(--accent) 60%, transparent), transparent 72%), var(--foot); }
+    .blob { position: absolute; z-index: -1; border-radius: 50%; filter: blur(46px); animation: floaty 12s ease-in-out infinite; }
+    .blob.b1 { width: 260px; height: 260px; background: var(--accent); top: -90px; inset-inline-end: -70px; opacity: .5; }
+    .blob.b2 { width: 230px; height: 230px; background: var(--saffron); bottom: -100px; inset-inline-start: -70px; opacity: .32; animation-duration: 16s; animation-direction: reverse; }
+    .cta { color: var(--saffron-ink); box-shadow: 0 8px 22px color-mix(in srgb, var(--saffron) 35%, transparent); }
+    .cta.ghost { color: var(--foot-ink); box-shadow: none; }
+    .cta.solid { color: var(--accent-ink); background: linear-gradient(135deg, var(--accent), var(--brand2)); border-color: transparent; box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 35%, transparent); }
+    .bubble { color: var(--saffron-ink); animation: bubbleBob 4s ease-in-out infinite; }
+    @keyframes bubbleBob { 0%, 100% { transform: rotate(-3deg) translateY(0); } 50% { transform: rotate(-3deg) translateY(-7px); } }
+    .rot { display: inline-block; }
+    .rot.swap { animation: rotIn .55s cubic-bezier(.2,.8,.2,1); }
+    @keyframes rotIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+    .mock.swap { animation: mockIn .5s cubic-bezier(.2,.8,.2,1); }
+    @keyframes mockIn { from { opacity: .2; transform: rotate(1.5deg) translateY(14px) scale(.97); } to { opacity: 1; transform: rotate(1.5deg); } }
+    .mock-shelf { display: flex; align-items: center; gap: 6px; }
+    .mock-shelf::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--sc, var(--saffron)); }
+    .mock-tick { border-color: var(--accent); }
+    .uc-label { margin: 20px 0 8px; font-size: 13px; opacity: .75; }
+    .uc-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .uc-tabs button { min-height: 40px; padding: 6px 16px; border-radius: 99px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.08); color: var(--foot-ink); font: inherit; font-size: 14px; font-weight: 600; }
+    .uc-tabs button[aria-pressed="true"] { background: var(--saffron); border-color: var(--saffron); color: var(--saffron-ink); }
+    .land-sec .uc-tabs { margin-bottom: 18px; }
+    .land-sec .uc-tabs button { border-color: var(--line); background: var(--surface); color: var(--ink); }
+    .land-sec .uc-tabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .uc-now { color: var(--accent); }
+    .pain:nth-child(4n+1), .feat:nth-child(6n+1) { --ic: var(--c1); } .pain:nth-child(4n+2), .feat:nth-child(6n+2) { --ic: var(--c2); }
+    .pain:nth-child(4n+3), .feat:nth-child(6n+3) { --ic: var(--c3); } .pain:nth-child(4n), .feat:nth-child(6n+4) { --ic: var(--c4); }
+    .feat:nth-child(6n+5) { --ic: var(--c5); } .feat:nth-child(6n) { --ic: var(--c6); }
+    .pain { border-top: 4px solid var(--ic, var(--accent)); }
+    .feat svg { color: var(--ic, var(--accent)); background: color-mix(in srgb, var(--ic, var(--accent)) 16%, transparent); }
+    .feat { transition: transform .25s ease, box-shadow .25s ease; }
+    .feat:hover { transform: translateY(-4px); box-shadow: 0 14px 30px color-mix(in srgb, var(--ic, var(--accent)) 20%, transparent); }
+    .steps li:nth-child(1)::before { background: var(--c1); color: #fff; } .steps li:nth-child(2)::before { background: var(--c4); color: #fff; } .steps li:nth-child(3)::before { background: var(--c5); color: #fff; }
+    .pains { grid-template-columns: 1fr; }
+    @media (min-width: 560px) { .pains { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 760px) { .pains { grid-template-columns: repeat(4, 1fr); } }
+
+    html.js .reveal { opacity: 0; transform: translateY(20px); transition: opacity .65s ease, transform .65s cubic-bezier(.2,.8,.2,1); transition-delay: var(--d, 0s); }
+    html.js .reveal.in { opacity: 1; transform: none; }
+
+    .who { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-inline-end: 6px; border-radius: 50%; vertical-align: middle;
+      font-size: 11px; font-weight: 800; color: #0c0d24; background: var(--wc, var(--accent)); }
+    .who-line { margin-inline-end: 8px; }
+    .meta .who + .tag, .meta .who-line + .tag { margin-inline-start: 0; }
+    .who-note { margin-top: 10px; }
+    .sm-mail { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      html.js .reveal { opacity: 1; transform: none; }
+    }
   </style>
 </head>
 <body>
-  <script>try { if (Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-token$/.test(k); })) document.documentElement.classList.add('has-session'); } catch (e) {}</script>
+  <script>try { var h = document.documentElement; if (Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-token$/.test(k); })) h.classList.add('has-session'); if (/[#&]join=/.test(location.hash) || localStorage.getItem('shop.pendingJoin')) h.classList.add('invited'); } catch (e) {}</script>
   <div class="splash" id="splash" aria-live="polite">در حال بارگذاری…</div>
+  <div id="welcome">
+    <div class="landing">
+      <header class="topbar">
+        <div class="wrap topbar-in">
+          <span class="brand"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1f6b4f"/><path d="M17 34l10 10 20-23" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="49" cy="15" r="6" fill="#f2c14e"/></svg><b>ایناروبگیر</b></span>
+          <button class="btn" type="button" data-go="login">ورود</button>
+        </div>
+      </header>
+
+      <section class="hero">
+        <i class="blob b1"></i><i class="blob b2"></i>
+        <div class="wrap hero-in">
+          <div class="hero-text">
+            <p class="eyebrow reveal">لیست خرید مشترک، برای هر گروهی که یکی می‌نویسد و یکی می‌خرد</p>
+            <h1 class="reveal">تو بنویس،<br><span class="rot" id="ucTail">او بگیره.</span></h1>
+            <p class="lead reveal">ایناروبگیر یک لیست خرید زنده و مشترک است. هر کس چیزی اضافه کند، بقیه همان لحظه می‌بینند و هر چه خریده شد تیک می‌خورد. بدون پیام، بدون تماس و بدون «چی بگیرم؟».</p>
+            <div class="reveal">
+              <p class="uc-label">برای کدام گروه؟</p>
+              <div class="uc-tabs" role="group" aria-label="کاربرد را انتخاب کنید">
+            <button type="button" data-uc="0" aria-pressed="true">خانواده</button>
+            <button type="button" data-uc="1" aria-pressed="false">دفتر و شرکت</button>
+            <button type="button" data-uc="2" aria-pressed="false">هم‌خانه‌ها</button>
+            <button type="button" data-uc="3" aria-pressed="false">کافه و مغازه</button>
+          </div>
+            </div>
+            <div class="cta-row reveal">
+              <button class="cta" type="button" data-go="signup">ساخت اولین لیست</button>
+              <button class="cta ghost" type="button" data-go="login">قبلاً ثبت‌نام کرده‌ام</button>
+            </div>
+            <p class="fine">بدون نصب برنامه؛ در مرورگر گوشی باز می‌شود.</p>
+          </div>
+
+          <div class="mock-wrap reveal" aria-hidden="true">
+            <div class="bubble" id="ucBubble">«اینارو بگیر!»</div>
+            <div class="mock" id="ucMock"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="land-sec">
+        <div class="wrap">
+          <h2 class="reveal">آشنا به نظر می‌رسه؟</h2>
+          <div class="pains">
+            <div class="pain reveal"><b>«شیر هم بگیری‌ها!»</b><p>پیامی که زیر انبوه پیام‌های دیگر گم می‌شود، درست وقتی جلوی قفسه ایستاده‌اید.</p></div>
+            <div class="pain reveal"><b>کاغذ روی میز</b><p>لیست کامل است، اما شما در فروشگاه هستید و کاغذ در خانه یا دفتر مانده.</p></div>
+            <div class="pain reveal"><b>«این رو که گرفته بودیم!»</b><p>دو نفر، دو لیست جدا، و یک کالا که دو بار خریده می‌شود.</p></div>
+            <div class="pain reveal"><b>آخر ماه: پول کجا رفت؟</b><p>خرج‌ها پراکنده‌اند و هیچ‌کس نمی‌داند ماه گذشته چقدر و روی چه چیزی خرج شده.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="land-sec alt">
+        <div class="wrap">
+          <h2 class="reveal">فرق ایناروبگیر با یادداشت و پیام‌رسان چیست؟</h2>
+          <div class="feats">
+            <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg><h3>یک لیست، زنده و مشترک</h3><p>وقتی یکی کالایی را تیک می‌زند، همان لحظه برای بقیه هم تیک می‌خورد. دیگر چیزی دو بار خریده نمی‌شود.</p></article>
+            <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><h3>به ترتیب قفسه‌های فروشگاه</h3><p>کالاها بر اساس قفسه دسته‌بندی می‌شوند و ترتیب قفسه‌ها را مثل فروشگاه خودتان می‌چینید. فقط یک دور می‌چرخید.</p></article>
+            <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4a7 7 0 100 14 7 7 0 000-14zM20 20l-4-4"/></svg><h3>کمتر تایپ کنید</h3><p>با دو حرف اول، کالا همراه با آخرین قیمتش پیشنهاد می‌شود. لیست دفعه بعد با چند لمس ساخته می‌شود.</p></article>
+            <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9h8v8l-9 9zM15.5 8.5h.01"/></svg><h3>قیمت‌ها یادتان می‌ماند</h3><p>آخرین قیمت هر کالا و نشان گران یا ارزان شدن نسبت به دفعه قبل. جمع تقریبی لیست را قبل از رفتن می‌دانید.</p></article>
+            <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg><h3>گزارش برای کسی که حساب نگه می‌دارد</h3><p>با «پایان خرید» لیست خالی می‌شود و خرید در تاریخچه می‌ماند. خرج ماهانه، خرج هر قفسه و پرخریدترین کالاها را ببینید.</p></article>
+            <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v9H6zM8 11V8a4 4 0 118 0v3"/></svg><h3>لیست‌های جدا و خصوصی</h3><p>برای خانه یک لیست، برای دفتر یکی دیگر. هر لیست فقط برای اعضای خودش است. تبلیغ ندارد و اطلاعات شما فروخته نمی‌شود.</p></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="land-sec">
+        <div class="wrap">
+          <h2 class="reveal">این‌طوری کار می‌کند: <span class="uc-now" id="ucStoryLabel">خانواده</span></h2>
+          <div class="reveal"><div class="uc-tabs" role="group" aria-label="کاربرد را انتخاب کنید">
+            <button type="button" data-uc="0" aria-pressed="true">خانواده</button>
+            <button type="button" data-uc="1" aria-pressed="false">دفتر و شرکت</button>
+            <button type="button" data-uc="2" aria-pressed="false">هم‌خانه‌ها</button>
+            <button type="button" data-uc="3" aria-pressed="false">کافه و مغازه</button>
+          </div></div>
+          <ol class="story" id="ucStory"></ol>
+        </div>
+      </section>
+
+      <section class="land-sec alt">
+        <div class="wrap">
+          <h2 class="reveal">سه قدم تا اولین خرید مشترک</h2>
+          <ol class="steps">
+            <li class="reveal"><b>ثبت‌نام</b><span>با ایمیل و یک رمز عبور، در چند ثانیه.</span></li>
+            <li class="reveal"><b>لیست بسازید و دعوت کنید</b><span>یک لینک دعوت برای همسر، همکار یا هم‌خانه‌تان بفرستید.</span></li>
+            <li class="reveal"><b>بنویسید «اینارو بگیر»</b><span>هر چه لازم است به لیست اضافه کنید، بقیه‌اش با او.</span></li>
+          </ol>
+          <div class="cta-row center reveal"><button class="cta solid" type="button" data-go="signup">همین حالا شروع کنید</button></div>
+        </div>
+      </section>
+
+      <section class="land-sec">
+        <div class="wrap">
+          <h2 class="reveal">سؤال‌های رایج</h2>
+          <div class="faq reveal">
+            <details><summary>فقط برای زوج‌ها و خانواده است؟</summary><p>نه. هر گروهی که یک نفر می‌نویسد و یک نفر می‌خرد: خانواده، همکاران یک دفتر، هم‌خانه‌ها، یا کافه و مغازه‌ای که مسئول خرید دارد. تا ۱۰ نفر در هر لیست.</p></details>
+            <details><summary>باید برنامه‌ای نصب کنم؟</summary><p>نه. لینک را در مرورگر گوشی باز کنید و وارد شوید. می‌توانید آن را به صفحه اصلی گوشی هم اضافه کنید.</p></details>
+            <details><summary>می‌توانم چند لیست جدا داشته باشم؟</summary><p>بله، تا ۲۰ لیست، مثلاً «خرید خانه»، «دفتر» و «مهمانی جمعه». هر کدام اعضا، قفسه‌ها و گزارش خودش را دارد.</p></details>
+            <details><summary>می‌شود دید چه کسی کالا را خریده؟</summary><p>فعلاً نه. همه نتیجه را می‌بینند، اما نام تیک‌زننده نمایش داده نمی‌شود.</p></details>
+            <details><summary>اگر اینترنت قطع باشد چه می‌شود؟</summary><p>آخرین لیستی که دیده‌اید نمایش داده می‌شود، اما برای ثبت تغییرات و هماهنگ شدن با دیگران به اینترنت نیاز دارید.</p></details>
+            <details><summary>اطلاعات من خصوصی است؟</summary><p>فقط اعضای همان لیست آن را می‌بینند. <button class="btn-link neutral" type="button" id="landPrivacy">توضیحات کامل حریم خصوصی</button></p></details>
+            <details><summary>این برنامه کامل شده است؟</summary><p>هنوز در مرحله آزمایشی هستیم. اگر چیزی کار نکرد یا پیشنهادی داشتید، حتماً به ما بگویید.</p></details>
+          </div>
+        </div>
+      </section>
+
+      <div class="wrap final-title reveal"><h2>اولین لیستتان را بسازید</h2></div>
+    </div>
+
   <section class="auth" id="auth">
     <div class="auth-card">
-      <h1>لیست خرید</h1>
+      <div class="brand-row"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1f6b4f"/><path d="M17 34l10 10 20-23" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="49" cy="15" r="6" fill="#f2c14e"/></svg><b class="brand-name">ایناروبگیر</b></div>
       <p class="auth-sub" id="authSub">برای شروع وارد شوید</p>
       <p class="auth-msg ok" id="authJoin" hidden>برای پیوستن به لیست مشترک، وارد شوید یا ثبت‌نام کنید.</p>
       <form id="authForm" autocomplete="on" onsubmit="return false">
         <label for="authEmail">ایمیل</label>
         <input class="field" id="authEmail" type="email" inputmode="email" autocomplete="email" dir="ltr" required>
+        <div id="authNameWrap" hidden>
+          <label for="authName">نام شما (برای نمایش به بقیه اعضا)</label>
+          <input class="field" id="authName" autocomplete="nickname" maxlength="30" placeholder="مثلاً نگین">
+        </div>
         <div id="authPassWrap">
           <label for="authPass" id="authPassLabel">رمز عبور</label>
           <input class="field" id="authPass" type="password" autocomplete="current-password" dir="ltr" minlength="6">
@@ -444,6 +745,7 @@ create table if not exists price_history (
       <p class="auth-note">لیست‌های هر کاربر خصوصی است و فقط اعضای همان لیست آن را می‌بینند. <button class="btn-link neutral" id="authPrivacy" type="button">حریم خصوصی و شرایط استفاده</button></p>
     </div>
   </section>
+  </div>
 
   <div id="appRoot" hidden>
   <main class="app">
@@ -473,9 +775,9 @@ create table if not exists price_history (
     </header>
 
     <nav class="tools" id="tools" aria-label="ابزارها" hidden>
-      <button class="tool" id="histBtn" type="button">تاریخچه</button>
-      <button class="tool" id="repBtn" type="button">گزارش‌ها</button>
-      <button class="tool" id="shelvesBtn" type="button">قفسه‌ها</button>
+      <button class="tool" id="histBtn" type="button"><span class="ti" style="--ic:var(--c1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>تاریخچه</button>
+      <button class="tool" id="repBtn" type="button"><span class="ti" style="--ic:var(--c4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span>گزارش‌ها</button>
+      <button class="tool" id="shelvesBtn" type="button"><span class="ti" style="--ic:var(--c5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9h8v8l-9 9z"/></svg></span>قفسه‌ها</button>
     </nav>
 
     <div class="lists" id="lists">
@@ -526,6 +828,20 @@ create table if not exists price_history (
         <button class="btn" id="acctClose" type="button">بستن</button>
       </div>
       <p class="hint" dir="ltr" id="acctMail2" style="text-align:left"></p>
+
+      <section class="rep-sec">
+        <h3>نام نمایشی</h3>
+        <p class="rep-note">اعضای لیست‌های مشترک این نام را کنار کالاهایی که اضافه یا خریداری می‌کنید می‌بینند.</p>
+        <form class="shelf-add" id="nameForm" autocomplete="off" style="margin-top:8px">
+          <input class="field" id="dispName" maxlength="30" placeholder="نام شما" aria-label="نام نمایشی">
+          <button class="btn btn-primary" type="submit">ذخیره</button>
+        </form>
+        <div id="whoBox" class="empty setup" hidden style="margin-top:12px">
+          <p>نمایش نام «اضافه‌کننده» و «خریدار» هنوز در پایگاه داده فعال نشده است. دستور زیر را در SQL Editor اجرا کنید:</p>
+          <pre id="whoSqlText"></pre>
+          <button class="btn btn-primary" type="button" id="whoSqlCopy">کپی دستور</button>
+        </div>
+      </section>
 
       <section class="rep-sec">
         <h3>تغییر رمز عبور</h3>
@@ -938,14 +1254,16 @@ end $$;
 revoke all on function join_list(text) from public, anon;
 grant execute on function join_list(text) to authenticated;
 
--- Members of a list (with e-mail) - visible only to other members of the same list.
+-- Members of a list (with e-mail and display name) - visible only to other members of the same list.
+drop function if exists list_member_info(bigint);
 create or replace function list_member_info(lid bigint)
-returns table (member_id uuid, member_email text, member_role text)
+returns table (member_id uuid, member_email text, member_role text, member_name text)
 language plpgsql security definer set search_path = public as $$
 begin
   if not is_list_member(lid) then raise exception 'not a member'; end if;
   return query
-    select m.user_id, u.email::text, m.role
+    select m.user_id, u.email::text, m.role,
+           coalesce(nullif(u.raw_user_meta_data->>'display_name', ''), split_part(u.email::text, '@', 1))
     from list_members m join auth.users u on u.id = m.user_id
     where m.list_id = lid
     order by m.created_at;
@@ -989,6 +1307,39 @@ begin
 end $$;
 revoke all on function delete_my_account() from public, anon;
 grant execute on function delete_my_account() to authenticated;
+
+-- 10) Who added / ticked an item (shown on rows, in history and in reports)
+alter table items add column if not exists added_by uuid references auth.users(id) on delete set null;
+alter table items add column if not exists checked_by uuid references auth.users(id) on delete set null;
+alter table items add column if not exists checked_at timestamptz;
+alter table session_items add column if not exists added_by uuid references auth.users(id) on delete set null;
+alter table session_items add column if not exists bought_by uuid references auth.users(id) on delete set null;
+
+-- The database itself records the person, so nobody can claim another member's tick.
+create or replace function items_track_people()
+returns trigger
+language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    if auth.uid() is not null then new.added_by := auth.uid(); end if;
+    if coalesce(new.is_checked, false) then
+      new.checked_by := auth.uid(); new.checked_at := now();
+    end if;
+    return new;
+  end if;
+  if coalesce(new.in_list, false) and not coalesce(old.in_list, false) and auth.uid() is not null then
+    new.added_by := auth.uid();
+  end if;
+  if coalesce(new.is_checked, false) and not coalesce(old.is_checked, false) then
+    new.checked_by := auth.uid(); new.checked_at := now();
+  elsif not coalesce(new.is_checked, false) and coalesce(old.is_checked, false) then
+    new.checked_by := null; new.checked_at := null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists items_track_people on items;
+create trigger items_track_people before insert or update on items
+  for each row execute function items_track_people();
 
 notify pgrst, 'reload schema';
 
@@ -1061,14 +1412,16 @@ end $$;
 revoke all on function join_list(text) from public, anon;
 grant execute on function join_list(text) to authenticated;
 
--- Members of a list (with e-mail) - visible only to other members of the same list.
+-- Members of a list (with e-mail and display name) - visible only to other members of the same list.
+drop function if exists list_member_info(bigint);
 create or replace function list_member_info(lid bigint)
-returns table (member_id uuid, member_email text, member_role text)
+returns table (member_id uuid, member_email text, member_role text, member_name text)
 language plpgsql security definer set search_path = public as $$
 begin
   if not is_list_member(lid) then raise exception 'not a member'; end if;
   return query
-    select m.user_id, u.email::text, m.role
+    select m.user_id, u.email::text, m.role,
+           coalesce(nullif(u.raw_user_meta_data->>'display_name', ''), split_part(u.email::text, '@', 1))
     from list_members m join auth.users u on u.id = m.user_id
     where m.list_id = lid
     order by m.created_at;
@@ -1118,6 +1471,59 @@ grant execute on function delete_my_account() to authenticated;
 
 notify pgrst, 'reload schema';`;
 
+    // Who added / ticked an item.
+    const WHO_SQL = `-- 10) Who added / ticked an item (shown on rows, in history and in reports)
+alter table items add column if not exists added_by uuid references auth.users(id) on delete set null;
+alter table items add column if not exists checked_by uuid references auth.users(id) on delete set null;
+alter table items add column if not exists checked_at timestamptz;
+alter table session_items add column if not exists added_by uuid references auth.users(id) on delete set null;
+alter table session_items add column if not exists bought_by uuid references auth.users(id) on delete set null;
+
+-- The database itself records the person, so nobody can claim another member's tick.
+create or replace function items_track_people()
+returns trigger
+language plpgsql as $$
+begin
+  if tg_op = 'INSERT' then
+    if auth.uid() is not null then new.added_by := auth.uid(); end if;
+    if coalesce(new.is_checked, false) then
+      new.checked_by := auth.uid(); new.checked_at := now();
+    end if;
+    return new;
+  end if;
+  if coalesce(new.in_list, false) and not coalesce(old.in_list, false) and auth.uid() is not null then
+    new.added_by := auth.uid();
+  end if;
+  if coalesce(new.is_checked, false) and not coalesce(old.is_checked, false) then
+    new.checked_by := auth.uid(); new.checked_at := now();
+  elsif not coalesce(new.is_checked, false) and coalesce(old.is_checked, false) then
+    new.checked_by := null; new.checked_at := null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists items_track_people on items;
+create trigger items_track_people before insert or update on items
+  for each row execute function items_track_people();
+
+-- Member list now also returns a display name (set in Account > Display name, else the part of the e-mail before @).
+drop function if exists list_member_info(bigint);
+create or replace function list_member_info(lid bigint)
+returns table (member_id uuid, member_email text, member_role text, member_name text)
+language plpgsql security definer set search_path = public as $$
+begin
+  if not is_list_member(lid) then raise exception 'not a member'; end if;
+  return query
+    select m.user_id, u.email::text, m.role,
+           coalesce(nullif(u.raw_user_meta_data->>'display_name', ''), split_part(u.email::text, '@', 1))
+    from list_members m join auth.users u on u.id = m.user_id
+    where m.list_id = lid
+    order by m.created_at;
+end $$;
+revoke all on function list_member_info(bigint) from public, anon;
+grant execute on function list_member_info(bigint) to authenticated;
+
+notify pgrst, 'reload schema';`;
+
     // ---------- State ----------
     const state = {
       items: [],            // the whole catalog (every item ever added)
@@ -1139,6 +1545,10 @@ notify pgrst, 'reload schema';`;
       recovery: RECOVERY_LINK,   // opened from a reset-password link
       lists: [],                 // lists the user belongs to
       memberCounts: new Map(),   // list id -> number of members
+      who: false,                // database has the added_by / checked_by columns
+      names: new Map(),          // user id -> display name (members of the open list)
+      namesList: null, namesAt: 0,
+      fx: new Map(),             // one-shot animations: item id (or 'n:name') -> 'add' | 'done' | 'back'
       listId: null,              // list currently shown
       hist: { rows: [], loading: false, hasMore: false, open: new Set(), detail: new Map() },
       rep: { range: 'all', loading: false, error: null, data: null, item: '', seq: 0 },
@@ -1344,7 +1754,9 @@ notify pgrst, 'reload schema';`;
         if (lid !== state.listId) return;                 // the user switched lists meanwhile
         if (itemsRes.error) throw itemsRes.error;
 
+        const prevItems = new Map(state.items.map(i => [i.id, i]));
         state.items = itemsRes.data || [];
+        if (state.items.some(i => 'checked_by' in i)) state.who = true;
         state.shelves = shelvesRes.error ? [] : (shelvesRes.data || []);
         const colsMissing = state.items.length && (state.items[0].in_list === undefined || state.items[0].sort_order === undefined || state.items[0].shelf === undefined);
         if (colsMissing || shelvesRes.error) state.needsMigration = true;
@@ -1354,8 +1766,19 @@ notify pgrst, 'reload schema';`;
         state.loaded = true;
         [...state.open].forEach(id => { const it = findItem(id); if (!it || !it.in_list) state.open.delete(id); });
         if (state.editing !== null && !findItem(state.editing)) state.editing = null;
+        // Someone else ticked something while we were looking? Animate it and say who.
+        if (state.who && state.user && prevItems.size) {
+          const theirs = state.items.filter(i => i.is_checked && i.checked_by && i.checked_by !== state.user.id
+            && prevItems.has(i.id) && !prevItems.get(i.id).is_checked);
+          if (theirs.length) {
+            theirs.forEach(i => queueFx(i.id, 'done'));
+            const who = displayName(theirs[0].checked_by) || 'یکی از اعضا';
+            toast(theirs.length === 1 ? `${who} «${theirs[0].name}» را خرید ✓` : `${who} و دیگران ${fmt(theirs.length)} کالا خریدند ✓`);
+          }
+        }
         saveSnapshot();
         render();
+        loadMemberNames(lid);
         if (!shelvesRes.error) adoptShelvesLater(lid);
         loadPriceHistory(lid);
       } catch (e) {
@@ -1473,6 +1896,9 @@ notify pgrst, 'reload schema';`;
       }
       html += `<div class="panel-block panel-row"><h3>قفسه</h3>
           <select class="field shelf-select" data-shelf-for="${id}" data-prev="${esc(item.shelf || '')}" aria-label="قفسه">${shelfOptionsHTML(item.shelf || '')}</select></div>`;
+      if (state.who && multi() && (item.added_by || item.checked_by)) {
+        html += `<p class="rep-note who-note">${item.added_by && displayName(item.added_by) ? `اضافه‌شده توسط ${esc(displayName(item.added_by))}` : ''}${item.checked_by && displayName(item.checked_by) ? `${item.added_by ? '، ' : ''}خریده‌شده توسط ${esc(displayName(item.checked_by))} ${whenText(item.checked_at)}` : ''}</p>`;
+      }
       html += historyHTML(hist);
       html += `<div class="actions">
           <button class="btn" data-act="edit" type="button">ویرایش</button>
@@ -1488,13 +1914,18 @@ notify pgrst, 'reload schema';`;
       const done = !!item.is_checked;
       const open = state.open.has(id);
       const hist = state.history.get(id) || [];
-      const shelfTag = showShelf && item.shelf ? `<span class="tag">${esc(item.shelf)}</span>` : '';
-      const meta = shelfTag + (price > 0
+      const shelfTag = showShelf && item.shelf ? `<span class="tag" style="--sc:${shelfColorVar(item.shelf)}">${esc(item.shelf)}</span>` : '';
+      const fx = takeFx(item);
+      const whoLine = state.who && multi()
+        ? (done ? (item.checked_by ? `<span class="who-line">${whoChip(item.checked_by, 'خریدار')}${esc(displayName(item.checked_by))} ${whenText(item.checked_at)}</span>` : '')
+                : (item.added_by ? whoChip(item.added_by, 'اضافه کرده') : ''))
+        : '';
+      const meta = whoLine + shelfTag + (price > 0
         ? `${fmt(qty)} × ${fmt(price)}${trendHTML(hist)}`
         : `تعداد ${fmt(qty)}، قیمت ثبت نشده`);
       const sum = price > 0 ? fmt(qty * price) : '—';
       const tickLabel = (done ? 'بازگرداندن به لیست: ' : 'خریداری شد: ') + esc(item.name);
-      return `<li class="row ${done ? 'is-done' : ''}" data-id="${id}">
+      return `<li class="row ${done ? 'is-done' : ''} ${fx ? 'fx-' + fx : ''}" data-id="${id}">
         <div class="row-main ${sortable ? 'has-grip' : ''}">
           <button class="tick" data-act="toggle" aria-pressed="${done}" aria-label="${tickLabel}"><span class="circle">${CHECK}</span></button>
           <button class="row-body" data-act="open" aria-expanded="${open}">
@@ -1517,7 +1948,7 @@ notify pgrst, 'reload schema';`;
       if (keys.length === 1 && keys[0] === '') return `<ul class="list">${rows(todo, todo.length > 1)}</ul>`;
       return keys.map(k => {
         const arr = groups.get(k);
-        return `<div class="shelf"><h3 class="shelf-title">${k ? esc(k) : 'بدون قفسه'}<span class="count">${fmt(arr.length)}</span></h3>
+        return `<div class="shelf" style="--sc:${shelfColorVar(k)}"><h3 class="shelf-title">${k ? esc(k) : 'بدون قفسه'}<span class="count">${fmt(arr.length)}</span></h3>
           <ul class="list">${rows(arr, arr.length > 1)}</ul></div>`;
       }).join('');
     }
@@ -1606,8 +2037,8 @@ notify pgrst, 'reload schema';`;
         if (i.is_checked) spent += t;
         else { est += t; if (!(Number(i.last_price) > 0)) noPrice++; }
       });
-      $('totalEst').textContent = fmt(est);
-      $('totalSpent').textContent = fmt(spent);
+      tween($('totalEst'), est);
+      tween($('totalSpent'), spent);
       const warn = $('noPriceWarn');
       warn.hidden = noPrice === 0;
       warn.textContent = noPrice ? `${fmt(noPrice)} کالا بدون قیمت` : '';
@@ -1737,6 +2168,7 @@ notify pgrst, 'reload schema';`;
         return true;
       }
 
+      queueFx('n:' + normName(name), 'add');
       return mutate(async () => {
         if (existing) {
           const patch = { in_list: true, is_checked: false, quantity: qty, sort_order: nextOrder(), updated_at: nowISO() };
@@ -1786,6 +2218,12 @@ notify pgrst, 'reload schema';`;
       }
       const hist = state.history.get(id) || [];
       const changed = price !== Number(item.last_price) || hist.length === 0;
+      // Optimistic: tick it on screen right away; the server confirms (or load() restores the truth).
+      item.is_checked = true; item.last_price = price;
+      if (state.who && state.user) { item.checked_by = state.user.id; item.checked_at = nowISO(); }
+      queueFx(id, 'done');
+      render();
+      if (!state.items.some(i => i.in_list && !i.is_checked)) celebrate();
       await mutate(async () => {
         ok(await db.from('items').update({ last_price: price, is_checked: true, updated_at: nowISO() }).eq('id', id));
         if (changed) ok(await db.from('price_history').insert([{ list_id: state.listId, item_id: id, price }]));
@@ -1793,6 +2231,8 @@ notify pgrst, 'reload schema';`;
     }
 
     async function unbuyItem(id) {
+      const it = findItem(id);
+      if (it) { it.is_checked = false; if (state.who) { it.checked_by = null; it.checked_at = null; } queueFx(id, 'back'); render(); }
       return mutate(async () => {
         ok(await db.from('items').update({ is_checked: false, updated_at: nowISO() }).eq('id', id));
       }, 'به لیست برگشت.');
@@ -1973,6 +2413,7 @@ notify pgrst, 'reload schema';`;
           const rows = inList.map(i => ({
             list_id: state.listId, session_id: sess.id, item_id: i.id, name: i.name, shelf: i.shelf || null,
             quantity: Number(i.quantity) || 1, unit_price: Number(i.last_price) || 0, bought: !!i.is_checked,
+            ...(state.who ? { added_by: i.added_by || null, bought_by: i.is_checked ? (i.checked_by || null) : null } : {}),
           }));
           ok(await db.from('session_items').insert(rows));
           ok(await db.from('items').update({ in_list: false, is_checked: false, updated_at: nowISO() }).eq('list_id', state.listId).eq('in_list', true));
@@ -2062,7 +2503,7 @@ notify pgrst, 'reload schema';`;
       bought.forEach(r => { const k = r.shelf || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(r); });
       const line = r => {
         const p = Number(r.unit_price) || 0, q = Number(r.quantity) || 1;
-        return `<li><span>${esc(r.name)}</span><span>${fmt(q)} × ${fmt(p)}${p > 0 ? ` = <b>${fmt(q * p)}</b>` : ''}</span></li>`;
+        return `<li><span>${whoChip(r.bought_by, 'خریدار')}${esc(r.name)}</span><span>${fmt(q)} × ${fmt(p)}${p > 0 ? ` = <b>${fmt(q * p)}</b>` : ''}</span></li>`;
       };
       let html = '<div class="hs-body">';
       [...groups.keys()].sort(shelfCmp).forEach(k => {
@@ -2150,7 +2591,7 @@ notify pgrst, 'reload schema';`;
     }
 
     function buildReport(rows) {
-      const trips = new Set(), months = new Map(), shelves = new Map(), items = new Map();
+      const trips = new Set(), months = new Map(), shelves = new Map(), items = new Map(), buyers = new Map();
       let total = 0;
       rows.forEach(r => {
         const qty = Number(r.quantity) || 1, price = Number(r.unit_price) || 0, amt = qty * price;
@@ -2162,6 +2603,8 @@ notify pgrst, 'reload schema';`;
           const cur = months.get(m.key) || { label: m.label, amt: 0 };
           cur.amt += amt; months.set(m.key, cur);
         }
+        const bk = r.bought_by || '';
+        buyers.set(bk, (buyers.get(bk) || 0) + amt);
         const sk = r.shelf || '';
         shelves.set(sk, (shelves.get(sk) || 0) + amt);
         const ik = normName(r.name);
@@ -2175,6 +2618,7 @@ notify pgrst, 'reload schema';`;
         total, trips: trips.size, avg: trips.size ? total / trips.size : 0, distinct: itemList.length,
         months: [...months.entries()].sort((a, b) => b[0] - a[0]).slice(0, 12).map(([, v]) => v),
         shelves: [...shelves.entries()].map(([name, amt]) => ({ name, amt })).sort((a, b) => b.amt - a.amt),
+        buyers: [...buyers.entries()].map(([id, amt]) => ({ id, amt })).sort((a, b) => b.amt - a.amt),
         top: [...itemList].sort((a, b) => b.times - a.times || b.total - a.total).slice(0, 10),
         trend: itemList.filter(i => i.points.length >= 2).sort((a, b) => b.points.length - a.points.length),
       };
@@ -2182,6 +2626,7 @@ notify pgrst, 'reload schema';`;
 
     async function loadReport() {
       const r = state.rep;
+      loadMemberNames(state.listId, true);
       const seq = ++r.seq;
       r.loading = true; r.error = null; renderReport();
       try {
@@ -2189,7 +2634,7 @@ notify pgrst, 'reload schema';`;
         const since = days ? new Date(Date.now() - days * 86400000).toISOString() : null;
         const rows = await fetchAll(() => {
           let q = db.from('session_items')
-            .select('name,shelf,quantity,unit_price,session_id,sessions!inner(ended_at)')
+            .select('*,sessions!inner(ended_at)')
             .eq('list_id', state.listId).eq('bought', true).order('id');
           if (since) q = q.gte('sessions.ended_at', since);
           return q;
@@ -2206,7 +2651,7 @@ notify pgrst, 'reload schema';`;
 
     function barsHTML(list, cls) {
       return list.map(x => `<div class="bar-row"><span>${esc(x.label)}</span><span class="bar-val">${x.val}</span>
-        <span class="bar-track ${cls || ''}"><i style="width:${Math.max(2, x.pct).toFixed(1)}%"></i></span></div>`).join('');
+        <span class="bar-track ${cls || ''}"><i style="width:${Math.max(2, x.pct).toFixed(1)}%;${x.color ? 'background:' + x.color : ''}"></i></span></div>`).join('');
     }
 
     function trendChartHTML(points) {
@@ -2246,8 +2691,14 @@ notify pgrst, 'reload schema';`;
 
       const sMax = Math.max(...d.shelves.map(x => x.amt), 1);
       html += `<section class="rep-sec"><h3>خرج به تفکیک قفسه</h3>${barsHTML(d.shelves.map(x => ({
-        label: x.name || 'بدون قفسه', val: `${fmt(x.amt)} (${fmt(d.total ? Math.round(x.amt / d.total * 100) : 0)}٪)`, pct: x.amt / sMax * 100 })), 'saffron')}</section>`;
+        label: x.name || 'بدون قفسه', val: `${fmt(x.amt)} (${fmt(d.total ? Math.round(x.amt / d.total * 100) : 0)}٪)`, pct: x.amt / sMax * 100, color: shelfColorVar(x.name) })), '')}</section>`;
 
+      if (d.buyers.some(x => x.id)) {
+        const bMax = Math.max(...d.buyers.map(x => x.amt), 1);
+        html += `<section class="rep-sec"><h3>خرج به تفکیک خریدار</h3>${barsHTML(d.buyers.map(x => ({
+          label: x.id ? (displayName(x.id) || 'عضو سابق') : 'نامشخص', val: `${fmt(x.amt)} (${fmt(d.total ? Math.round(x.amt / d.total * 100) : 0)}٪)`,
+          pct: x.amt / bMax * 100, color: x.id ? userColorVar(x.id) : 'var(--muted)' })), '')}</section>`;
+      }
       html += `<section class="rep-sec"><h3>پرخریدترین کالاها</h3><ul class="hs-items">${d.top.map(i =>
         `<li><span>${esc(i.name)}</span><span>${fmt(i.times)} بار، ${fmt(i.total)} تومان</span></li>`).join('')}</ul></section>`;
 
@@ -2606,6 +3057,7 @@ notify pgrst, 'reload schema';`;
       authMode = mode;
       const pass = $('authPass');
       $('authPassWrap').hidden = mode === 'forgot';
+      $('authNameWrap').hidden = mode !== 'signup';
       pass.required = mode !== 'forgot';
       pass.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
       $('authPassLabel').textContent = mode === 'recovery' ? 'رمز عبور جدید' : 'رمز عبور';
@@ -2636,6 +3088,8 @@ notify pgrst, 'reload schema';`;
       document.documentElement.classList.remove('has-session');
       $('splash').hidden = true;
       $('appRoot').hidden = true;
+      $('welcome').hidden = false;
+      $('welcome').classList.toggle('auth-only', mode === 'recovery');
       $('auth').hidden = false;
       setAuthMode(mode);
       let pending = false;
@@ -2655,7 +3109,7 @@ notify pgrst, 'reload schema';`;
           const { error } = await db.auth.signInWithPassword({ email, password: pass });
           if (error) throw error;
         } else if (authMode === 'signup') {
-          const { data, error } = await db.auth.signUp({ email, password: pass });
+          const { data, error } = await db.auth.signUp({ email, password: pass, options: { data: { display_name: $('authName').value.trim() } } });
           if (error) throw error;
           if (!data.session) {
             setAuthMode('login');
@@ -2702,7 +3156,7 @@ notify pgrst, 'reload schema';`;
 
     function resetListState() {
       Object.assign(state, {
-        items: [], history: new Map(), open: new Set(), editing: null, loaded: false, error: null,
+        items: [], history: new Map(), names: new Map(), namesList: null, namesAt: 0, open: new Set(), editing: null, loaded: false, error: null,
         needsMigration: false, shelves: [], shelfList: [], rank: new Map(), adopted: new Set(), shelfTouched: false,
         hist: { rows: [], loading: false, hasMore: false, open: new Set(), detail: new Map() },
         rep: { range: 'all', loading: false, error: null, data: null, item: '', seq: 0 },
@@ -2713,7 +3167,7 @@ notify pgrst, 'reload schema';`;
     function updateListTitle() {
       const l = currentList();
       $('listName').textContent = l ? l.name : 'لیست خرید';
-      document.title = (l ? l.name + ' | ' : '') + 'لیست خرید هوشمند';
+      document.title = (l ? l.name + ' | ' : '') + 'ایناروبگیر';
     }
 
     async function fetchLists() {
@@ -2762,6 +3216,7 @@ notify pgrst, 'reload schema';`;
       state.listId = id;
       saveListId(id);
       resetListState();
+      { const L = $('lists'); L.classList.remove('swap'); void L.offsetWidth; L.classList.add('swap'); setTimeout(() => L.classList.remove('swap'), 450); }
       updateListTitle();
       subscribeRealtime();
       applyCache(id);
@@ -2797,8 +3252,11 @@ notify pgrst, 'reload schema';`;
 
     async function enterApp() {
       $('auth').hidden = true;
+      $('welcome').hidden = true;
       $('splash').hidden = true;
-      document.documentElement.classList.remove('has-session');
+      document.documentElement.classList.remove('has-session', 'invited');
+      document.documentElement.classList.add('in-app');
+      try { localStorage.setItem('shop.seen', '1'); } catch (e) { /* ignore */ }
       $('appRoot').hidden = false;
       $('acctEmail').textContent = state.user ? state.user.email : '';
       resetListState();
@@ -2808,6 +3266,7 @@ notify pgrst, 'reload schema';`;
       const quick = saved && state.lists.some(l => l.id === saved) ? selectList(saved) : null;
       try {
         await fetchLists();
+        loadMemberNames(state.listId);
         let joinedId = null;
         const tok = takePendingJoin();
         if (tok) joinedId = await joinWithToken(tok);
@@ -2831,6 +3290,7 @@ notify pgrst, 'reload schema';`;
     }
 
     function leaveApp() {
+      document.documentElement.classList.remove('in-app');
       unsubscribeRealtime();
       ['listsDlg', 'membersDlg', 'acctDlg', 'shelfDlg', 'histDlg', 'repDlg', 'endDlg'].forEach(id => { const d = $(id); if (d && d.open) d.close(); });
       clearCaches();
@@ -2898,6 +3358,15 @@ notify pgrst, 'reload schema';`;
     }
 
     $('authForm').addEventListener('submit', submitAuth);
+    $('welcome').addEventListener('click', e => {
+      const b = e.target.closest('[data-go]');
+      if (!b) return;
+      setAuthMode(b.dataset.go === 'login' ? 'login' : 'signup');
+      const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      $('auth').scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'center' });
+      setTimeout(() => $('authEmail').focus({ preventScroll: true }), calm ? 0 : 450);
+    });
+    $('landPrivacy').addEventListener('click', () => $('privDlg').showModal());
     $('authToggle').addEventListener('click', () => setAuthMode(authMode === 'login' ? 'signup' : 'login'));
     $('authForgot').addEventListener('click', () => setAuthMode('forgot'));
     $('listBtn').addEventListener('click', () => { renderLists(); $('listsDlg').showModal(); });
@@ -2932,10 +3401,26 @@ notify pgrst, 'reload schema';`;
 
     $('acctBtn').addEventListener('click', () => {
       $('acctMail2').textContent = state.user ? state.user.email : '';
+      $('dispName').value = (state.user && state.user.user_metadata && state.user.user_metadata.display_name) || '';
+      $('whoBox').hidden = state.who || !state.items.length;
       $('pwNew').value = ''; $('delConfirm').value = ''; $('delBtn').disabled = true; $('acctSqlBox').hidden = true;
       $('acctDlg').showModal();
     });
 
+    $('whoSqlText').textContent = WHO_SQL;
+    $('whoSqlCopy').addEventListener('click', async () => toast(await copyText(WHO_SQL) ? 'کپی شد. آن را در SQL Editor اجرا کنید.' : 'کپی نشد. متن را دستی کپی کنید.'));
+    $('nameForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = $('dispName').value.trim();
+      const { error } = await db.auth.updateUser({ data: { display_name: name } });
+      if (error) { toast('ذخیره نام انجام نشد.', 'error'); return; }
+      const { data } = await db.auth.getSession();
+      if (data.session) state.user = data.session.user;
+      state.namesAt = 0;
+      loadMemberNames(state.listId, true);
+      render();
+      toast('نام شما ذخیره شد.');
+    });
     $('pwForm').addEventListener('submit', async e => {
       e.preventDefault();
       const pw = $('pwNew').value;
@@ -3029,7 +3514,12 @@ notify pgrst, 'reload schema';`;
         if (id !== mem.listId) return;
         const err = mr.error || ir.error;
         if (err) { if (isMissingFn(err)) mem.setup = true; else throw err; }
-        else { mem.members = mr.data || []; mem.invites = ir.data || []; mem.setup = false; }
+        else {
+          mem.members = mr.data || []; mem.invites = ir.data || []; mem.setup = false;
+          state.names = new Map(mem.members.map(m => [m.member_id, m.member_name || String(m.member_email || '').split('@')[0]]));
+          state.namesList = id; state.namesAt = Date.now();
+          if (id === state.listId) render();
+        }
       } catch (e) {
         console.error(e);
         toast('اطلاعات اعضا دریافت نشد.', 'error');
@@ -3055,7 +3545,7 @@ notify pgrst, 'reload schema';`;
         const me = state.user && m.member_id === state.user.id;
         const canAct = m.member_role !== 'owner' && (mine || me);
         return `<li class="sm-row" data-uid="${m.member_id}">
-          <div class="sm-top"><span class="sm-name" dir="ltr">${esc(m.member_email)}</span>
+          <div class="sm-top"><span class="sm-name">${esc(m.member_name || m.member_email)}<small class="sm-mail" dir="ltr">${esc(m.member_email)}</small></span>
             <span class="sm-count">${roleText(m.member_role)}${me ? '، شما' : ''}</span></div>
           ${canAct ? `<div class="sm-actions"><button class="btn btn-danger" type="button" data-mact="${me ? 'leave' : 'remove'}">${me ? 'ترک لیست' : 'حذف از لیست'}</button></div>` : ''}
         </li>`;
@@ -3172,6 +3662,168 @@ notify pgrst, 'reload schema';`;
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) { softRefresh(); validateLists(); } });
 
+    // ---------- People: who added / ticked ----------
+    const multi = () => (state.memberCounts.get(state.listId) || 0) > 1;
+    function myName() {
+      const u = state.user;
+      if (!u) return '';
+      return (u.user_metadata && u.user_metadata.display_name) || (u.email || '').split('@')[0];
+    }
+    function displayName(uid) {
+      if (!uid) return '';
+      if (state.names.has(uid)) return state.names.get(uid);
+      return state.user && uid === state.user.id ? myName() : '';
+    }
+    function userColorVar(uid) {
+      let n = 0;
+      for (const ch of String(uid)) n = (n * 31 + ch.charCodeAt(0)) >>> 0;
+      return `var(--c${(n % 6) + 1})`;
+    }
+    // Small coloured initial. Empty when the person is unknown or the list has one member.
+    function whoChip(uid, label) {
+      const name = displayName(uid);
+      if (!name || !multi()) return '';
+      return `<span class="who" style="--wc:${userColorVar(uid)}" title="${esc(label ? label + ': ' + name : name)}">${esc([...name][0] || '')}</span>`;
+    }
+    function whenText(ts) {
+      if (!ts) return '';
+      const d = new Date(ts), now = new Date();
+      const t = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' }).format(d);
+      return d.toDateString() === now.toDateString() ? t : new Intl.DateTimeFormat('fa-IR', { month: 'short', day: 'numeric' }).format(d) + '، ' + t;
+    }
+    async function loadMemberNames(lid, force) {
+      if (!state.who && !force) { /* names are still useful in the members dialog, but not needed for rows */ }
+      if ((state.memberCounts.get(lid) || 0) < 2) { state.names = new Map(); return; }
+      if (!force && state.namesList === lid && Date.now() - state.namesAt < 120000) return;
+      try {
+        const r = await db.rpc('list_member_info', { lid });
+        if (r.error || lid !== state.listId) return;
+        state.names = new Map((r.data || []).map(m => [m.member_id, m.member_name || String(m.member_email || '').split('@')[0]]));
+        state.namesList = lid; state.namesAt = Date.now();
+        const a = document.activeElement;
+        if (!(a && a.matches && a.matches('input') && a.closest('#lists'))) render();
+      } catch (e) { console.error('names:', e); }
+    }
+
+    // ---------- Motion & colour helpers ----------
+    function reducedMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+
+    // Each shelf keeps its colour (derived from its database id, so reordering never changes it).
+    function shelfColorVar(name) {
+      if (!name) return 'var(--accent)';
+      const row = state.shelfList.find(x => x.name === name);
+      let n = row ? Number(row.id) || 0 : 0;
+      if (!row) { for (const ch of name) n = (n * 31 + ch.charCodeAt(0)) >>> 0; }
+      return `var(--c${(n % 6) + 1})`;
+    }
+    function takeFx(item) {
+      for (const k of [item.id, 'n:' + normName(item.name)]) {
+        if (state.fx.has(k)) { const v = state.fx.get(k); state.fx.delete(k); return v; }
+      }
+      return '';
+    }
+    function queueFx(key, type) { state.fx.set(key, type); setTimeout(() => state.fx.delete(key), 8000); }
+
+    // Counts a number up/down instead of jumping.
+    function tween(el, to) {
+      const from = el.dataset.val === undefined ? to : Number(el.dataset.val);
+      el.dataset.val = String(to);
+      cancelAnimationFrame(el._raf);
+      if (from === to || reducedMotion()) { el.textContent = fmt(to); return; }
+      const t0 = performance.now(), dur = 600;
+      const step = now => {
+        const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+        el.textContent = fmt(Math.round(from + (to - from) * e));
+        if (k < 1) el._raf = requestAnimationFrame(step);
+      };
+      el._raf = requestAnimationFrame(step);
+    }
+
+    function celebrate() {
+      toast('آفرین! همه کالاها خریداری شد.');
+      if (reducedMotion()) return;
+      const host = document.createElement('div');
+      host.className = 'confetti';
+      host.setAttribute('aria-hidden', 'true');
+      const vars = ['--accent', '--saffron', '--c1', '--c2', '--c3', '--c4', '--c5', '--c6'];
+      for (let i = 0; i < 38; i++) {
+        const p = document.createElement('i');
+        p.style.setProperty('--x', (Math.random() * 100).toFixed(1) + 'vw');
+        p.style.setProperty('--dx', (Math.random() * 200 - 100).toFixed(0) + 'px');
+        p.style.setProperty('--r', (Math.random() * 720 - 360).toFixed(0) + 'deg');
+        p.style.setProperty('--d', (Math.random() * 0.4).toFixed(2) + 's');
+        p.style.background = `var(${vars[i % vars.length]})`;
+        host.appendChild(p);
+      }
+      document.body.appendChild(host);
+      setTimeout(() => host.remove(), 2600);
+    }
+
+    // ---------- Welcome page: use cases + reveal-on-scroll ----------
+    const USE_CASES = [
+      { label: 'خانواده', tail: 'او بگیره.', bubble: '«اینارو بگیر!»', list: 'خرید آخر هفته', members: '۲ عضو',
+        shelves: [{ name: 'لبنیات', rows: [['شیر', '۲ × ۴۵٬۰۰۰'], ['ماست', '۱ × ۶۸٬۰۰۰']] }, { name: 'میوه و سبزی', rows: [['گوجه', '۳ × ۳۲٬۰۰۰'], ['خیار', '۲ × ۲۸٬۰۰۰']] }, { name: 'شوینده', rows: [['مایع ظرفشویی', '۱ × ۹۰٬۰۰۰']] }],
+        note: 'بهزاد: شیر رو گرفتم ✓',
+        story: [['۱۷:۴۰', 'نگین سر کار یادش می‌آید ماست تمام شده. سه ثانیه بعد ماست توی لیست است.'], ['۱۸:۱۵', 'بهزاد جلوی قفسه لبنیات لیست را باز می‌کند. ماست و شیر کنار هم‌اند و لازم نیست بگردد.'], ['۱۸:۲۰', 'تیک‌ها می‌خورند، نگین همان لحظه می‌بیند و دیگر زنگ نمی‌زند.']] },
+      { label: 'دفتر و شرکت', tail: 'مسئول خرید بگیره.', bubble: '«اینارو تهیه کن!»', list: 'تدارکات دفتر', members: '۴ عضو',
+        shelves: [{ name: 'خوراکی و چای', rows: [['چای کیسه‌ای', '۳ × ۱۲۰٬۰۰۰'], ['قند', '۲ × ۵۵٬۰۰۰']] }, { name: 'لوازم اداری', rows: [['کاغذ A4', '۵ × ۲۱۰٬۰۰۰'], ['خودکار', '۱۰ × ۸٬۰۰۰']] }, { name: 'بهداشتی', rows: [['دستمال کاغذی', '۶ × ۴۵٬۰۰۰']] }],
+        note: 'رضا: کاغذ رو گرفتم ✓',
+        story: [['۰۹:۰۰', 'خانم احمدی می‌بیند چای تمام شده و آن را به لیست دفتر اضافه می‌کند.'], ['۱۱:۳۰', 'مدیر دفتر لیست را مرور می‌کند و جمع برآوردی خرج را همان‌جا می‌بیند.'], ['۱۴:۰۰', 'مسئول خرید می‌گیرد و تیک می‌زند. آخر ماه گزارش خرج دفتر آماده است.']] },
+      { label: 'هم‌خانه‌ها', tail: 'هم‌خانه‌ات بگیره.', bubble: '«نوبت توئه!»', list: 'خانه دانشجویی', members: '۳ عضو',
+        shelves: [{ name: 'نان و غلات', rows: [['نان', '۴ × ۱۵٬۰۰۰'], ['برنج', '۱ × ۳۰۰٬۰۰۰']] }, { name: 'لبنیات', rows: [['تخم‌مرغ', '۱ × ۱۱۰٬۰۰۰']] }, { name: 'شوینده', rows: [['کیسه زباله', '۲ × ۳۵٬۰۰۰']] }],
+        note: 'سارا: نون رو گرفتم ✓',
+        story: [['۲۰:۱۰', 'یکی ته‌مانده برنج را می‌بیند و آن را در لیست می‌نویسد.'], ['۲۱:۰۰', 'هم‌خانه‌ای که دم در است لیست را باز می‌کند و دیگر نمی‌پرسد «چی نداریم؟»'], ['۲۱:۲۰', 'تیک می‌خورد و هیچ‌کس چیزی را دو بار نمی‌خرد.']] },
+      { label: 'کافه و مغازه', tail: 'انباردار بگیره.', bubble: '«تا فردا بیار!»', list: 'مواد اولیه کافه', members: '۳ عضو',
+        shelves: [{ name: 'لبنیات', rows: [['شیر', '۱۲ × ۴۵٬۰۰۰'], ['خامه', '۴ × ۷۲٬۰۰۰']] }, { name: 'نوشیدنی', rows: [['قهوه', '۲ × ۸۵۰٬۰۰۰'], ['سیروپ', '۳ × ۱۶۰٬۰۰۰']] }, { name: 'لوازم مصرفی', rows: [['لیوان کاغذی', '۵ × ۹۵٬۰۰۰']] }],
+        note: 'کامران: قهوه رو گرفتم ✓',
+        story: [['۲۲:۳۰', 'بعد از بستن کافه، کمبودها را وارد لیست می‌کنند.'], ['۰۷:۳۰', 'مسئول خرید صبح، قبل از رفتن به بازار، لیست را به ترتیب راهروها می‌بیند.'], ['۰۹:۰۰', 'خرید ثبت می‌شود و گزارش هفته و خرج هر قفسه آماده است.']] },
+    ];
+    let ucIndex = 0, ucUser = false;
+
+    function renderUseCase(i, animate) {
+      ucIndex = i;
+      const c = USE_CASES[i];
+      const tail = $('ucTail'), mock = $('ucMock');
+      tail.textContent = c.tail;
+      $('ucBubble').textContent = c.bubble;
+      let first = true;
+      mock.innerHTML = `<div class="mock-bar"><b>${c.list}</b><span>${c.members}</span></div>`
+        + c.shelves.map((sh, si) => `<div class="mock-shelf" style="--sc:var(--c${si + 1})">${sh.name}</div>`
+          + sh.rows.map(r => { const cls = first ? ' r1' : ''; first = false; return `<div class="mock-row${cls}"><i class="mock-tick"></i><span>${r[0]}</span><em>${r[1]}</em></div>`; }).join('')).join('')
+        + `<div class="mock-note">${c.note}</div>`;
+      $('ucStory').innerHTML = c.story.map(x => `<li><time>${x[0]}</time><p>${x[1]}</p></li>`).join('');
+      $('ucStoryLabel').textContent = c.label;
+      document.querySelectorAll('[data-uc]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.uc) === i)));
+      if (animate && !reducedMotion()) {
+        [tail, mock].forEach(el => { el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap'); });
+      }
+    }
+    renderUseCase(0, false);
+    $('welcome').addEventListener('click', e => {
+      const b = e.target.closest('[data-uc]');
+      if (!b) return;
+      ucUser = true;
+      renderUseCase(Number(b.dataset.uc), true);
+    });
+    if (!reducedMotion()) {
+      setInterval(() => {
+        if (ucUser || document.hidden || $('welcome').hidden || $('welcome').classList.contains('auth-only')) return;
+        renderUseCase((ucIndex + 1) % USE_CASES.length, true);
+      }, 6500);
+    }
+
+    // Sections fade in as they scroll into view.
+    (function revealOnScroll() {
+      const els = [...document.querySelectorAll('#welcome .reveal')];
+      const io = 'IntersectionObserver' in window
+        ? new IntersectionObserver(entries => entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: 0.12 })
+        : null;
+      els.forEach((el, i) => {
+        el.style.setProperty('--d', ((i % 4) * 0.08).toFixed(2) + 's');
+        if (io) io.observe(el); else el.classList.add('in');
+      });
+    })();
+
     // ---------- Start ----------
     (async function boot() {
       $('authSubmit').disabled = false;
@@ -3187,7 +3839,11 @@ notify pgrst, 'reload schema';`;
       });
       if (state.recovery) showAuth('recovery');
       else if (state.user) enterApp();
-      else showAuth('login');
+      else {
+        let seen = false;
+        try { seen = !!localStorage.getItem('shop.seen'); } catch (e) { /* ignore */ }
+        showAuth(seen ? 'login' : 'signup');
+      }
     })();
   });
   </script>
