@@ -365,6 +365,10 @@ create table if not exists price_history (
     .bar-val { color: var(--muted); font-size: 13px; }
     .bar-track { grid-column: 1 / -1; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
     .bar-track i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+    .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .kpi { background: var(--card, var(--line)); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+    .kpi b { display: block; font-size: 22px; }
+    .kpi span { color: var(--muted); font-size: 12px; }
     .bar-track.saffron i { background: var(--focus); }
     .chart { width: 100%; height: auto; margin-top: 10px; direction: ltr; }
     .ch-line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
@@ -858,6 +862,17 @@ create table if not exists price_history (
       </section>
 
       <section class="rep-sec">
+        <h3>آمار ناشناس استفاده</h3>
+        <p class="rep-note">فقط نام رویدادهایی مثل «باز شدن برنامه» یا «ثبت خرید» با یک شناسه تصادفی دستگاه ثبت می‌شود؛ نه نام کالا، نه قیمت، نه ایمیل. به بهتر شدن برنامه کمک می‌کند.</p>
+        <label class="rep-note" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="statsOpt"> <span id="statsOptTxt">ارسال آمار ناشناس</span></label>
+      </section>
+
+      <section class="rep-sec" id="adminSec" hidden>
+        <h3>مدیریت</h3>
+        <button class="btn" id="adminOpen" type="button">آمار استفاده از برنامه</button>
+      </section>
+
+      <section class="rep-sec">
         <h3>حریم خصوصی</h3>
         <button class="btn" id="acctPrivacy" type="button">خواندن توضیحات حریم خصوصی</button>
       </section>
@@ -877,6 +892,19 @@ create table if not exists price_history (
     </div>
   </dialog>
 
+  <dialog class="sheet" id="adminDlg" aria-labelledby="admTitle">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="admTitle">آمار استفاده</h2>
+        <button class="btn" id="admClose" type="button">بستن</button>
+      </div>
+      <select class="field" id="admDays" aria-label="بازه زمانی">
+        <option value="7">۷ روز اخیر</option><option value="30" selected>۳۰ روز اخیر</option><option value="90">۹۰ روز اخیر</option>
+      </select>
+      <div id="admBody"></div>
+    </div>
+  </dialog>
+
   <dialog class="sheet" id="privDlg" aria-labelledby="privTitle">
     <div class="sheet-in">
       <div class="sheet-head">
@@ -889,7 +917,7 @@ create table if not exists price_history (
         <h3>چه کسی آن را می‌بیند؟</h3>
         <p>فقط اعضای هر لیست. اگر عضو یک لیست مشترک باشید، اعضای همان لیست ایمیل شما و کالاهای لیست را می‌بینند. لیست‌های دیگر شما برای آن‌ها قابل مشاهده نیست. مدیر سرویس از نظر فنی به پایگاه داده دسترسی دارد، ولی اطلاعات شما را برای تبلیغات یا فروش استفاده نمی‌کند.</p>
         <h3>کجا نگهداری می‌شود؟</h3>
-        <p>اطلاعات روی سرورهای سرویس Supabase ذخیره می‌شود. نمونه‌ای از اطلاعات لیست‌ها برای سرعت بیشتر روی دستگاه شما هم نگه داشته می‌شود و با خروج از حساب پاک می‌شود. برنامه ردیاب تبلیغاتی یا تحلیلی ندارد.</p>
+        <p>اطلاعات روی سرورهای سرویس Supabase ذخیره می‌شود. نمونه‌ای از اطلاعات لیست‌ها برای سرعت بیشتر روی دستگاه شما هم نگه داشته می‌شود و با خروج از حساب پاک می‌شود. برنامه ردیاب تبلیغاتی یا ابزار تحلیلی شخص ثالث (مثل گوگل آنالیتیکس) ندارد. فقط آمار ناشناس استفاده روی همین پایگاه داده ثبت می‌شود: نام رویدادهایی مثل «باز شدن برنامه» یا «ثبت یک خرید» همراه با یک شناسه تصادفی دستگاه که به ایمیل یا نام شما وصل نیست. هیچ نام کالا، قیمت یا متنی در آن ثبت نمی‌شود. از «حساب کاربری» می‌توانید آن را خاموش کنید و اگر مرورگر شما «Do Not Track» را فعال کرده باشد اصلاً ارسال نمی‌شود.</p>
         <h3>حذف اطلاعات</h3>
         <p>هر زمان می‌توانید از «حساب کاربری» نسخه پشتیبان بگیرید یا حساب خود را حذف کنید. نسخه‌های پشتیبان پایگاه داده ممکن است تا مدتی پس از حذف نزد ارائه‌دهنده سرور باقی بمانند.</p>
         <h3>شرایط استفاده</h3>
@@ -1593,6 +1621,35 @@ notify pgrst, 'reload schema';`;
       toastHide = setTimeout(() => { try { if (t.hidePopover && t.matches(':popover-open')) t.hidePopover(); } catch (e) { /* ignore */ } }, 300);
     }
     // action = { label, fn } adds a button (used for "Undo").
+    // ---------- Anonymous usage stats (no names, prices or list text; random device id, not linked to the account) ----------
+    const Track = (() => {
+      const DID = 'shop.did', OFF = 'shop.noStats';
+      let q = [], timer = null, dead = false;
+      const dnt = () => navigator.doNotTrack === '1' || window.doNotTrack === '1';
+      function enabled() { if (dnt()) return false; try { return !localStorage.getItem(OFF); } catch (e) { return true; } }
+      function did() {
+        try {
+          let v = localStorage.getItem(DID);
+          if (!v) { const a = new Uint8Array(12); crypto.getRandomValues(a); v = [...a].map(b => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem(DID, v); }
+          return v;
+        } catch (e) { return 'nostorage-' + Math.random().toString(16).slice(2, 12); }
+      }
+      async function flush() {
+        clearTimeout(timer); timer = null;
+        if (dead || !q.length) return;
+        const batch = q.splice(0, 50);
+        try { const r = await db.from('app_events').insert(batch); if (r.error) dead = true; } catch (e) { dead = true; }   // table missing/blocked: stop quietly
+      }
+      function event(name, props) {
+        if (dead || !enabled()) return;
+        q.push({ device: did(), event: name, signed_in: !!state.user, props: props || null });
+        if (q.length >= 10) flush(); else if (!timer) timer = setTimeout(flush, 4000);
+      }
+      function setEnabled(on) { try { if (on) localStorage.removeItem(OFF); else { localStorage.setItem(OFF, '1'); q = []; } } catch (e) { /* ignore */ } }
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+      return { event, enabled, setEnabled, dnt };
+    })();
+
     function toast(msg, kind = 'info', action = null) {
       const t = $('toast');
       t.textContent = msg;
@@ -2184,7 +2241,7 @@ notify pgrst, 'reload schema';`;
             .select().single());
           if (created && p > 0) ok(await db.from('price_history').insert([{ list_id: state.listId, item_id: created.id, price: p }]));
         }
-      }, 'به لیست اضافه شد.');
+      }, 'به لیست اضافه شد.').then(r => { if (r) Track.event('item_added'); return r; });
     }
 
     async function addByName(raw) {
@@ -2224,10 +2281,10 @@ notify pgrst, 'reload schema';`;
       queueFx(id, 'done');
       render();
       if (!state.items.some(i => i.in_list && !i.is_checked)) celebrate();
-      await mutate(async () => {
+      if (await mutate(async () => {
         ok(await db.from('items').update({ last_price: price, is_checked: true, updated_at: nowISO() }).eq('id', id));
         if (changed) ok(await db.from('price_history').insert([{ list_id: state.listId, item_id: id, price }]));
-      }, 'خرید ثبت شد.');
+      }, 'خرید ثبت شد.')) Track.event('item_bought');
     }
 
     async function unbuyItem(id) {
@@ -2424,6 +2481,7 @@ notify pgrst, 'reload schema';`;
         sessionId = sess.id;
       });
       if (success && sessionId) {
+        Track.event('trip_ended', { bought: r.bought, skipped: r.pending });
         state.hist.rows = []; state.hist.detail.clear();          // history is reloaded when opened
         toast(r.spent > 0 ? `خرید تمام شد. جمع: ${fmt(r.spent)} تومان` : 'لیست جدید آماده است.', 'info',
           { label: 'برگرداندن', fn: () => restoreSession(sessionId, 'exact') });
@@ -2880,7 +2938,7 @@ notify pgrst, 'reload schema';`;
         case 'del': deleteSession(id); break;
       }
     });
-    $('repBtn').addEventListener('click', () => { renderReport(); $('repDlg').showModal(); loadReport(); });
+    $('repBtn').addEventListener('click', () => { Track.event('report_opened'); renderReport(); $('repDlg').showModal(); loadReport(); });
     $('repRanges').addEventListener('click', e => {
       const b = e.target.closest('[data-range]');
       if (!b || b.dataset.range === state.rep.range) return;
@@ -3108,9 +3166,11 @@ notify pgrst, 'reload schema';`;
         if (authMode === 'login') {
           const { error } = await db.auth.signInWithPassword({ email, password: pass });
           if (error) throw error;
+          Track.event('login');
         } else if (authMode === 'signup') {
           const { data, error } = await db.auth.signUp({ email, password: pass, options: { data: { display_name: $('authName').value.trim() } } });
           if (error) throw error;
+          Track.event('signup', { invited: document.documentElement.classList.contains('invited') });
           if (!data.session) {
             setAuthMode('login');
             setAuthMsg('پیام تأیید به ایمیل شما ارسال شد. بعد از تأیید، وارد شوید.', 'ok');
@@ -3242,6 +3302,7 @@ notify pgrst, 'reload schema';`;
         const l = Array.isArray(r.data) ? r.data[0] : r.data;
         await fetchLists();
         toast(`به لیست «${l.name}» پیوستید.`);
+        Track.event('invite_joined');
         return l.id;
       } catch (e) {
         console.error(e);
@@ -3259,6 +3320,8 @@ notify pgrst, 'reload schema';`;
       try { localStorage.setItem('shop.seen', '1'); } catch (e) { /* ignore */ }
       $('appRoot').hidden = false;
       $('acctEmail').textContent = state.user ? state.user.email : '';
+      Track.event('app_open');
+      checkAdmin();
       resetListState();
       try { const raw = localStorage.getItem(listsKey()); if (raw) state.lists = JSON.parse(raw); } catch (e) { /* ignore */ }
       const saved = savedListId();
@@ -3321,6 +3384,7 @@ notify pgrst, 'reload schema';`;
       if (!name) return false;
       try {
         const l = await createListRpc(name);
+        Track.event('list_created');
         state.lists.push(l);
         selectList(l.id);
         toast('لیست جدید ساخته شد.');
@@ -3403,6 +3467,8 @@ notify pgrst, 'reload schema';`;
       $('acctMail2').textContent = state.user ? state.user.email : '';
       $('dispName').value = (state.user && state.user.user_metadata && state.user.user_metadata.display_name) || '';
       $('whoBox').hidden = state.who || !state.items.length;
+      $('statsOpt').checked = Track.enabled(); $('statsOpt').disabled = Track.dnt();
+      $('statsOptTxt').textContent = Track.dnt() ? 'خاموش است (مرورگر شما Do Not Track را فعال کرده)' : 'ارسال آمار ناشناس';
       $('pwNew').value = ''; $('delConfirm').value = ''; $('delBtn').disabled = true; $('acctSqlBox').hidden = true;
       $('acctDlg').showModal();
     });
@@ -3449,6 +3515,7 @@ notify pgrst, 'reload schema';`;
         a.download = `shopping-list-backup-${new Date().toISOString().slice(0, 10)}.json`;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        Track.event('export_data');
         toast('نسخه پشتیبان دانلود شد.');
       } catch (e) {
         console.error(e);
@@ -3456,6 +3523,49 @@ notify pgrst, 'reload schema';`;
       }
       btn.disabled = false;
     }
+    // ---------- Usage stats switch + admin stats screen ----------
+    let isAdmin = false;
+    async function checkAdmin() {
+      try { const r = await db.rpc('is_app_admin'); isAdmin = !r.error && r.data === true; } catch (e) { isAdmin = false; }
+      $('adminSec').hidden = !isAdmin;
+    }
+    const EVT = { landing_view: 'دیدن صفحه معرفی', signup: 'ثبت‌نام', login: 'ورود', app_open: 'باز کردن برنامه', item_added: 'افزودن کالا',
+      item_bought: 'ثبت خرید کالا', trip_ended: 'پایان یک خرید', report_opened: 'دیدن گزارش', list_created: 'ساخت لیست جدید',
+      invite_created: 'ساخت لینک دعوت', invite_joined: 'پیوستن با دعوت', export_data: 'نسخه پشتیبان' };
+    const FUNNEL = ['landing_view', 'signup', 'app_open', 'item_added', 'item_bought', 'trip_ended', 'invite_created', 'invite_joined'];
+    const dayFmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'short', day: 'numeric' });
+    function daySeries(arr) {
+      const rows = (arr || []).slice(-14), max = Math.max(1, ...rows.map(x => x.n));
+      return rows.length ? barsHTML(rows.map(x => ({ label: dayFmt.format(new Date(x.d + 'T12:00:00')), val: fmt(x.n), pct: x.n / max * 100 })))
+                         : '<p class="rep-note">هنوز داده‌ای نیست.</p>';
+    }
+    async function loadAdmin() {
+      const body = $('admBody');
+      body.innerHTML = '<p class="hint">در حال بارگیری…</p>';
+      const r = await db.rpc('admin_stats', { days: Number($('admDays').value) });
+      if (r.error) { body.innerHTML = `<p class="hint">${isMissingFn(r.error) ? 'ابتدا فایل supabase-analytics-update.sql را در SQL Editor اجرا کنید.' : 'دریافت آمار انجام نشد.'}</p>`; return; }
+      const d = r.data || {}, f = d.funnel || {}, ev = d.events || {};
+      const ret = d.cohort_old > 0 ? fmt(Math.round(d.returning / d.cohort_old * 100)) + '٪' : '—';
+      const kpi = (v, l) => `<div class="kpi"><b>${v}</b><span>${l}</span></div>`;
+      const fmax = Math.max(1, ...FUNNEL.map(k => f[k] || 0));
+      body.innerHTML = `<div class="kpis">
+          ${kpi(fmt(d.users_total), 'کاربران ثبت‌نام‌شده')}${kpi(fmt(d.users_new), 'ثبت‌نام در این بازه')}
+          ${kpi(fmt(d.active_1d), 'دستگاه فعال امروز')}${kpi(fmt(d.active_7d), 'فعال در ۷ روز')}
+          ${kpi(fmt(d.active_30d), 'فعال در ۳۰ روز')}${kpi(ret, 'بازگشت پس از ۷ روز')}
+          ${kpi(fmt(d.lists_total) + ' / ' + fmt(d.lists_shared), 'لیست‌ها / مشترک')}${kpi(fmt(d.trips_period), 'خرید ثبت‌شده در بازه')}
+        </div>
+        <section class="rep-sec"><h3>دستگاه‌های فعال در هر روز</h3>${daySeries(d.active_by_day)}</section>
+        <section class="rep-sec"><h3>ثبت‌نام در هر روز</h3>${daySeries(d.signups_by_day)}</section>
+        <section class="rep-sec"><h3>مسیر استفاده (تعداد دستگاه)</h3>
+          ${barsHTML(FUNNEL.map(k => ({ label: EVT[k], val: fmt(f[k] || 0) + ' · ' + fmt(ev[k] || 0) + ' بار', pct: (f[k] || 0) / fmax * 100 })), 'saffron')}
+          <p class="rep-note">عدد اول: چند دستگاه. عدد دوم: چند بار رخ داده.</p></section>`;
+    }
+    $('adminOpen').addEventListener('click', () => { $('adminDlg').showModal(); loadAdmin(); });
+    $('admDays').addEventListener('change', loadAdmin);
+    $('admClose').addEventListener('click', () => $('adminDlg').close());
+    $('adminDlg').addEventListener('click', e => { if (e.target === $('adminDlg')) $('adminDlg').close(); });
+    $('statsOpt').addEventListener('change', () => Track.setEnabled($('statsOpt').checked));
+
     $('exportBtn').addEventListener('click', exportData);
 
     $('delConfirm').addEventListener('input', () => {
@@ -3597,6 +3707,7 @@ notify pgrst, 'reload schema';`;
           b.disabled = false;
           if (r.error) { toast(isMissingFn(r.error) ? 'ابتدا دستور SQL اشتراک‌گذاری را اجرا کنید.' : 'ساخت لینک انجام نشد.', 'error'); break; }
           mem.link = inviteLink(r.data);
+          Track.event('invite_created');
           await refreshMembers();
           toast(await copyText(mem.link) ? 'لینک ساخته و کپی شد.' : 'لینک ساخته شد.');
           break;
@@ -3840,6 +3951,7 @@ notify pgrst, 'reload schema';`;
       if (state.recovery) showAuth('recovery');
       else if (state.user) enterApp();
       else {
+        Track.event('landing_view', { invited: document.documentElement.classList.contains('invited') });
         let seen = false;
         try { seen = !!localStorage.getItem('shop.seen'); } catch (e) { /* ignore */ }
         showAuth(seen ? 'login' : 'signup');
