@@ -95,7 +95,13 @@ create table if not exists price_history (
   <meta property="og:locale" content="fa_IR">
   <meta property="og:title" content="ایناروبگیر | تو بنویس، او بگیره">
   <meta property="og:description" content="لیست خرید زنده و مشترک. هر کدام چیزی اضافه کنید، دیگری همان لحظه می‌بیند.">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234347c9'/%3E%3Cpath d='M17 34l10 10 20-23' fill='none' stroke='white' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='49' cy='15' r='6' fill='%23ffb300'/%3E%3C/svg%3E">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="ایناروبگیر">
+  <meta name="application-name" content="ایناروبگیر">
 
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <!-- Font loads without blocking the first paint (system font is shown meanwhile). -->
@@ -409,6 +415,29 @@ create table if not exists price_history (
     .hs-items .btn-link { color: var(--accent); }
     .hs-items .btn-link.danger { color: var(--danger); }
 
+    /* ---------- Installed-app polish ---------- */
+    html { -webkit-tap-highlight-color: transparent; }
+    button, .btn, .row, select, summary { touch-action: manipulation; -webkit-touch-callout: none; }
+    @media (display-mode: standalone) { body { overscroll-behavior-y: none; } }
+    .wm { display: block; width: calc(var(--h, 28px) * 4.25); height: var(--h, 28px); flex: none; }
+    .bn { color: var(--accent); font-weight: 800; }
+    .splash { gap: 14px; justify-items: center; align-content: center; }
+    .splash .wm { animation: wmPulse 1.4s ease-in-out infinite; }
+    @keyframes wmPulse { 0%, 100% { opacity: .55; transform: scale(.97); } 50% { opacity: 1; transform: scale(1); } }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .install-bar { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--tint); font-size: 14px; animation: sheetIn .35s ease both; }
+    .install-bar[hidden] { display: none; }
+    .install-bar p { margin: 0; flex: 1; line-height: 1.6; }
+    .install-bar .btn { white-space: nowrap; }
+    .offline-bar { position: fixed; z-index: 60; inset: auto 12px calc(var(--dock-h, 70px) + 12px + env(safe-area-inset-bottom)); padding: 9px 12px; border-radius: 12px; background: var(--danger-solid); color: #fff; font-size: 13px; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,.25); }
+    .offline-bar[hidden] { display: none; }
+    .steps { margin: 10px 0 0; padding: 0 20px 0 0; line-height: 2; font-size: 15px; }
+    @media (prefers-reduced-motion: no-preference) {
+      .btn:active, .tool:active { transform: scale(.97); }
+      .btn, .tool { transition: transform .12s ease; }
+    }
+    @media (prefers-reduced-motion: reduce) { .splash .wm { animation: none; } }
+
     /* ---------- Welcome page ---------- */
     .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
     .logo { width: 34px; height: 34px; flex: none; }
@@ -613,13 +642,14 @@ create table if not exists price_history (
   </style>
 </head>
 <body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><symbol id="wordmark" viewBox="-40 -1870 10644 2504"><path style="fill:var(--accent)" d="M768 -677V-404Q768 -361 812 -335Q847 -313 883 -313H929V15H883Q825 15 760 -4Q731 217 611 352Q436 551 99 551H0V223H99Q283 223 361 140Q440 57 440 -138V-677Z M1692 -404Q1692 -356 1715 -336Q1741 -313 1807 -313H1953V15H1807Q1742 15 1684 1Q1638 -10 1598 -30Q1552 -52 1529 -74Q1506 -52 1455 -30Q1354 15 1215 15H879V-313H1238Q1310 -313 1339 -337Q1365 -358 1365 -404V-676H1692ZM1561 593 1365 395 1559 195 1759 395ZM1139 594 943 396 1136 196 1336 396Z M2361 -313Q2402 -313 2402 -275V-25Q2402 15 2361 15H1943Q1903 15 1903 -25V-275Q1903 -313 1943 -313Z M2702 -351Q2788 -351 2845.0 -300.0Q2902 -249 2902 -170Q2902 -90 2845.0 -39.0Q2788 12 2702 12Q2615 12 2559.0 -39.5Q2503 -91 2503 -170Q2503 -248 2559.0 -299.5Q2615 -351 2702 -351Z M3475 -313Q3516 -313 3516 -275V-25Q3516 15 3475 15H3057Q3017 15 3017 -25V-275Q3017 -313 3057 -313Z M3924 -313Q3965 -313 3965 -275V-25Q3965 15 3924 15H3506Q3466 15 3466 -25V-275Q3466 -313 3506 -313Z M5009 -368Q5079 -313 5204 -313V15Q4969 15 4809 -109Q4773 -136 4728 -181Q4666 -99 4567 -48Q4446 15 4302 15H3915V-313H4302Q4359 -313 4410 -336Q4461 -360 4477 -394Q4485 -410 4485 -431Q4485 -482 4434 -559L4400 -604Q4333 -687 4225 -824Q4186 -873 4155 -913Q4127 -949 4126 -950L4183 -1198L5050 -1617L5193 -1322L4510 -992Q4560 -930 4818 -591Q4948 -415 5009 -368ZM4199 -1504 4933 -1830 4985 -1718 4186 -1362Z M5845 -493Q5853 -445 5853 -401Q5853 -265 5775 -157Q5650 15 5368 15H5154V-313H5361Q5451 -313 5488 -337Q5526 -360 5526 -410Q5526 -425 5522 -443Q5512 -494 5502 -547Q5498 -567 5494 -590L5490 -609L5487 -628Q5472 -710 5464 -745L5777 -840Q5807 -699 5845 -493ZM5272 363 5480 153 5692 365 5482 575Z M6628 -312V-415Q6628 -507 6589 -561Q6550 -614 6483 -614Q6415 -614 6375 -561Q6338 -512 6338 -434Q6338 -425 6339 -415Q6342 -362 6386 -335Q6424 -312 6483 -312ZM6835 -781Q6956 -634 6956 -415V-48Q6956 300 6669 449Q6558 507 6405 533Q6286 554 6145 554V226Q6395 226 6521 156Q6623 100 6623 15H6483Q6304 15 6180 -81Q6029 -197 6029 -415Q6029 -622 6129 -766Q6251 -942 6483 -942Q6704 -942 6835 -781Z M7774 -137Q7774 175 7617 353Q7442 552 7105 552H7006V224H7105Q7289 224 7367 141Q7446 58 7446 -137V-676H7774Z M8466 15H8376Q8265 15 8177 -24Q8110 -53 8060 -103Q8010 -153 7981 -220Q7942 -308 7942 -419V-1427H8269V-419Q8269 -358 8292 -335Q8314 -313 8376 -313H8466Z M9079 -404Q9079 -356 9102 -336Q9128 -313 9194 -313H9234V15H9194Q9129 15 9071 1Q9025 -10 8985 -30Q8939 -52 8916 -74Q8893 -52 8842 -30Q8741 15 8602 15H8414V-313H8625Q8697 -313 8726 -337Q8752 -358 8752 -404V-676H9079ZM8636 -1137 8844 -1347 9056 -1135 8845 -925Z M10052 -493Q10060 -445 10060 -401Q10060 -265 9982 -157Q9857 15 9575 15H9184V-313H9568Q9658 -313 9695 -337Q9733 -360 9733 -410Q9733 -425 9729 -443Q9719 -494 9709 -547Q9705 -567 9701 -590L9697 -609L9694 -628Q9679 -710 9671 -745L9984 -840Q10014 -699 10052 -493ZM9819 587 9623 389 9817 189 10017 389ZM9397 588 9201 390 9394 190 9594 390Z M10564 15H10236V-1427H10564Z"/><path style="fill:none;stroke:var(--saffron);stroke-width:150;stroke-linecap:round;stroke-linejoin:round" d="M2099 -960L2458 -566L3306 -1398"/></symbol></svg>
   <script>try { var h = document.documentElement; if (Object.keys(localStorage).some(function (k) { return /^sb-.+-auth-token$/.test(k); })) h.classList.add('has-session'); if (/[#&]join=/.test(location.hash) || localStorage.getItem('shop.pendingJoin')) h.classList.add('invited'); } catch (e) {}</script>
-  <div class="splash" id="splash" aria-live="polite">در حال بارگذاری…</div>
+  <div class="splash" id="splash" aria-live="polite"><svg class="wm" style="--h:40px" role="img" aria-label="ایناروبگیر"><use href="#wordmark"/></svg><span class="sr-only">در حال بارگذاری…</span></div>
   <div id="welcome">
     <div class="landing">
       <header class="topbar">
         <div class="wrap topbar-in">
-          <span class="brand"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1f6b4f"/><path d="M17 34l10 10 20-23" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="49" cy="15" r="6" fill="#f2c14e"/></svg><b>ایناروبگیر</b></span>
+          <span class="brand"><svg class="wm" style="--h:30px" role="img" aria-label="ایناروبگیر"><use href="#wordmark"/></svg></span>
           <button class="btn" type="button" data-go="login">ورود</button>
         </div>
       </header>
@@ -630,7 +660,7 @@ create table if not exists price_history (
           <div class="hero-text">
             <p class="eyebrow reveal">لیست خرید مشترک، برای هر گروهی که یکی می‌نویسد و یکی می‌خرد</p>
             <h1 class="reveal">تو بنویس،<br><span class="rot" id="ucTail">او بگیره.</span></h1>
-            <p class="lead reveal">ایناروبگیر یک لیست خرید زنده و مشترک است. هر کس چیزی اضافه کند، بقیه همان لحظه می‌بینند و هر چه خریده شد تیک می‌خورد. بدون پیام، بدون تماس و بدون «چی بگیرم؟».</p>
+            <p class="lead reveal"><b class="bn">ایناروبگیر</b> یک لیست خرید زنده و مشترک است. هر کس چیزی اضافه کند، بقیه همان لحظه می‌بینند و هر چه خریده شد تیک می‌خورد. بدون پیام، بدون تماس و بدون «چی بگیرم؟».</p>
             <div class="reveal">
               <p class="uc-label">برای کدام گروه؟</p>
               <div class="uc-tabs" role="group" aria-label="کاربرد را انتخاب کنید">
@@ -668,7 +698,7 @@ create table if not exists price_history (
 
       <section class="land-sec alt">
         <div class="wrap">
-          <h2 class="reveal">فرق ایناروبگیر با یادداشت و پیام‌رسان چیست؟</h2>
+          <h2 class="reveal">فرق <span class="bn">ایناروبگیر</span> با یادداشت و پیام‌رسان چیست؟</h2>
           <div class="feats">
             <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h13l-3-3M20 15H7l3 3"/></svg><h3>یک لیست، زنده و مشترک</h3><p>وقتی یکی کالایی را تیک می‌زند، همان لحظه برای بقیه هم تیک می‌خورد. دیگر چیزی دو بار خریده نمی‌شود.</p></article>
             <article class="feat reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><h3>به ترتیب قفسه‌های فروشگاه</h3><p>کالاها بر اساس قفسه دسته‌بندی می‌شوند و ترتیب قفسه‌ها را مثل فروشگاه خودتان می‌چینید. فقط یک دور می‌چرخید.</p></article>
@@ -725,7 +755,7 @@ create table if not exists price_history (
 
   <section class="auth" id="auth">
     <div class="auth-card">
-      <div class="brand-row"><svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="16" fill="#1f6b4f"/><path d="M17 34l10 10 20-23" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="49" cy="15" r="6" fill="#f2c14e"/></svg><b class="brand-name">ایناروبگیر</b></div>
+      <div class="brand-row"><svg class="wm" style="--h:38px" role="img" aria-label="ایناروبگیر"><use href="#wordmark"/></svg></div>
       <p class="auth-sub" id="authSub">برای شروع وارد شوید</p>
       <p class="auth-msg ok" id="authJoin" hidden>برای پیوستن به لیست مشترک، وارد شوید یا ثبت‌نام کنید.</p>
       <form id="authForm" autocomplete="on" onsubmit="return false">
@@ -753,6 +783,11 @@ create table if not exists price_history (
 
   <div id="appRoot" hidden>
   <main class="app">
+    <div class="install-bar" id="installBar" hidden>
+      <p>ایناروبگیر را روی صفحه اصلی گوشی نصب کنید تا مثل یک برنامه باز شود.</p>
+      <button class="btn btn-primary" id="installGo" type="button">نصب</button>
+      <button class="btn" id="installLater" type="button" aria-label="بعداً">×</button>
+    </div>
     <header class="head">
       <div class="head-top">
         <h1><button class="list-title" id="listBtn" type="button" aria-haspopup="dialog" aria-label="لیست‌های من">
@@ -861,6 +896,12 @@ create table if not exists price_history (
         <button class="btn" id="exportBtn" type="button" style="margin-top:10px">دانلود نسخه پشتیبان</button>
       </section>
 
+      <section class="rep-sec" id="installSec">
+        <h3>نصب برنامه</h3>
+        <p class="rep-note">روی صفحه اصلی گوشی اضافه می‌شود و بدون نوار مرورگر باز می‌شود.</p>
+        <button class="btn btn-primary" id="installBtn" type="button" style="margin-top:10px">نصب ایناروبگیر</button>
+      </section>
+
       <section class="rep-sec">
         <h3>آمار ناشناس استفاده</h3>
         <p class="rep-note">فقط نام رویدادهایی مثل «باز شدن برنامه» یا «ثبت خرید» با یک شناسه تصادفی دستگاه ثبت می‌شود؛ نه نام کالا، نه قیمت، نه ایمیل. به بهتر شدن برنامه کمک می‌کند.</p>
@@ -889,6 +930,21 @@ create table if not exists price_history (
           <button class="btn btn-primary" type="button" id="acctSqlCopy">کپی دستور</button>
         </div>
       </section>
+    </div>
+  </dialog>
+
+  <div class="offline-bar" id="offBar" role="status" hidden>اتصال اینترنت قطع است. آخرین وضعیت لیست نمایش داده می‌شود و تغییرات ثبت نمی‌شوند.</div>
+
+  <dialog class="sheet" id="iosDlg" aria-labelledby="iosTitle">
+    <div class="sheet-in">
+      <div class="sheet-head">
+        <h2 id="iosTitle">نصب روی گوشی</h2>
+        <button class="btn" id="iosClose" type="button">بستن</button>
+      </div>
+      <p class="rep-note"><b>آیفون (Safari):</b></p>
+      <ol class="steps"><li>دکمه «اشتراک‌گذاری» (مربع با فلش رو به بالا) را بزنید.</li><li>«Add to Home Screen» یا «افزودن به صفحه آغازین» را انتخاب کنید.</li><li>«Add» را بزنید.</li></ol>
+      <p class="rep-note" style="margin-top:14px"><b>اندروید (Chrome):</b></p>
+      <ol class="steps"><li>منوی سه‌نقطه بالای مرورگر را باز کنید.</li><li>«Install app» یا «افزودن به صفحه اصلی» را بزنید.</li></ol>
     </div>
   </dialog>
 
@@ -2280,6 +2336,8 @@ notify pgrst, 'reload schema';`;
       if (state.who && state.user) { item.checked_by = state.user.id; item.checked_at = nowISO(); }
       queueFx(id, 'done');
       render();
+      if (navigator.vibrate) navigator.vibrate(12);
+      maybeInstallBar(true);
       if (!state.items.some(i => i.in_list && !i.is_checked)) celebrate();
       if (await mutate(async () => {
         ok(await db.from('items').update({ last_price: price, is_checked: true, updated_at: nowISO() }).eq('id', id));
@@ -3321,6 +3379,7 @@ notify pgrst, 'reload schema';`;
       $('appRoot').hidden = false;
       $('acctEmail').textContent = state.user ? state.user.email : '';
       Track.event('app_open');
+      bumpOpens();
       checkAdmin();
       resetListState();
       try { const raw = localStorage.getItem(listsKey()); if (raw) state.lists = JSON.parse(raw); } catch (e) { /* ignore */ }
@@ -3523,6 +3582,48 @@ notify pgrst, 'reload schema';`;
       }
       btn.disabled = false;
     }
+    // ---------- Install as an app + offline notice ----------
+    let deferredInstall = null;
+    const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const INST_KEY = 'shop.installDismiss', OPENS_KEY = 'shop.opens';
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+    function installBarAllowed() {
+      if (isStandalone() || !(deferredInstall || isIOS)) return false;
+      const t = Number(lsGet(INST_KEY));
+      return !(t && Date.now() - t < 14 * 864e5);
+    }
+    function maybeInstallBar(force) {
+      const bar = $('installBar');
+      if (!bar) return;
+      bar.hidden = !(installBarAllowed() && (force || Number(lsGet(OPENS_KEY)) >= 3));
+    }
+    async function doInstall() {
+      Track.event('install_click');
+      if (deferredInstall) {
+        const p = deferredInstall; deferredInstall = null;
+        p.prompt();
+        try { await p.userChoice; } catch (e) { /* ignore */ }
+        maybeInstallBar();
+      } else {
+        $('iosDlg').showModal();
+      }
+    }
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; maybeInstallBar(); });
+    window.addEventListener('appinstalled', () => { deferredInstall = null; Track.event('pwa_installed'); $('installBar').hidden = true; $('installSec').hidden = true; toast('برنامه نصب شد.'); });
+    $('installGo').addEventListener('click', () => { $('installBar').hidden = true; doInstall(); });
+    $('installLater').addEventListener('click', () => { lsSet(INST_KEY, String(Date.now())); $('installBar').hidden = true; });
+    $('installBtn').addEventListener('click', () => { $('acctDlg').close(); doInstall(); });
+    $('iosClose').addEventListener('click', () => $('iosDlg').close());
+    $('iosDlg').addEventListener('click', e => { if (e.target === $('iosDlg')) $('iosDlg').close(); });
+    function bumpOpens() { lsSet(OPENS_KEY, String((Number(lsGet(OPENS_KEY)) || 0) + 1)); $('installSec').hidden = isStandalone(); maybeInstallBar(); }
+    const syncOnline = () => { $('offBar').hidden = navigator.onLine !== false; };
+    addEventListener('online', syncOnline); addEventListener('offline', syncOnline); syncOnline();
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+      addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => { /* app still works without it */ }));
+    }
+
     // ---------- Usage stats switch + admin stats screen ----------
     let isAdmin = false;
     async function checkAdmin() {
@@ -3531,8 +3632,8 @@ notify pgrst, 'reload schema';`;
     }
     const EVT = { landing_view: 'دیدن صفحه معرفی', signup: 'ثبت‌نام', login: 'ورود', app_open: 'باز کردن برنامه', item_added: 'افزودن کالا',
       item_bought: 'ثبت خرید کالا', trip_ended: 'پایان یک خرید', report_opened: 'دیدن گزارش', list_created: 'ساخت لیست جدید',
-      invite_created: 'ساخت لینک دعوت', invite_joined: 'پیوستن با دعوت', export_data: 'نسخه پشتیبان' };
-    const FUNNEL = ['landing_view', 'signup', 'app_open', 'item_added', 'item_bought', 'trip_ended', 'invite_created', 'invite_joined'];
+      invite_created: 'ساخت لینک دعوت', invite_joined: 'پیوستن با دعوت', install_click: 'زدن دکمه نصب', pwa_installed: 'نصب برنامه', export_data: 'نسخه پشتیبان' };
+    const FUNNEL = ['landing_view', 'signup', 'app_open', 'item_added', 'item_bought', 'trip_ended', 'invite_created', 'invite_joined', 'install_click', 'pwa_installed'];
     const dayFmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'short', day: 'numeric' });
     function daySeries(arr) {
       const rows = (arr || []).slice(-14), max = Math.max(1, ...rows.map(x => x.n));
