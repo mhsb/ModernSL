@@ -415,6 +415,37 @@ create table if not exists price_history (
     .hs-items .btn-link { color: var(--accent); }
     .hs-items .btn-link.danger { color: var(--danger); }
 
+    /* ---------- Folding shelves, decimals, chat ---------- */
+    .sec-tools { display: inline-flex; gap: 6px; align-items: center; }
+    .shelf-title { margin-bottom: 4px; }
+    .shelf-toggle { display: flex; align-items: center; gap: 8px; flex: 1; min-height: 38px; padding: 0 2px; margin: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+    .shelf-toggle .chev { flex: none; transition: transform .2s ease; }
+    .shelf.folded .chev { transform: rotate(90deg); }
+    .shelf-toggle .st-name { flex: 1; }
+    .st-sum { font-weight: 500; font-size: 12px; color: var(--muted); }
+    .shelf .list[hidden] { display: none; }
+    .qty-in { width: 64px; }
+    .tool .ti { position: relative; }
+    .badge { position: absolute; top: -5px; inset-inline-end: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--danger-solid, #d33); color: #fff; font: 700 11px/18px inherit; font-style: normal; text-align: center; }
+    .badge[hidden] { display: none; }
+    @media (max-width: 400px) { .tools { gap: 6px; } .tool { gap: 5px; font-size: 13px; } .tool .ti { width: 24px; height: 24px; } }
+    #chatDlg { margin-bottom: var(--kb, 0px); }
+    .chat-in { display: flex; flex-direction: column; padding: 16px 14px calc(14px + env(safe-area-inset-bottom)); height: min(82vh, calc(var(--vvh, 100vh) - 24px)); }
+    .chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding: 4px 2px 10px; overscroll-behavior: contain; }
+    .chat-log .empty { margin: auto; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.9; }
+    .cday { align-self: center; margin: 10px 0 4px; padding: 2px 10px; border-radius: 99px; background: var(--tint); color: var(--muted); font-size: 11px; }
+    .cmsg { max-width: 82%; padding: 7px 11px 5px; border-radius: 14px; background: var(--tint); line-height: 1.7; font-size: 15px; word-break: break-word; align-self: flex-end; }
+    .cmsg.mine { align-self: flex-start; background: var(--accent); color: #fff; }
+    .cmsg.first { margin-top: 6px; }
+    .cname { display: block; font-size: 12px; font-weight: 700; color: var(--wc); }
+    .cbody { white-space: pre-wrap; }
+    .cbody a { color: inherit; text-decoration: underline; }
+    .cmeta { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1px; font-size: 11px; opacity: .72; }
+    .cmeta button { border: 0; background: none; color: inherit; font: inherit; padding: 0; text-decoration: underline; }
+    .chat-form { display: flex; gap: 8px; align-items: flex-end; padding-top: 10px; border-top: 1px solid var(--line); }
+    .chat-form textarea { flex: 1; resize: none; max-height: 120px; min-height: 44px; }
+    .chat-note { margin: auto; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.9; }
+
     /* ---------- Installed-app polish ---------- */
     html { -webkit-tap-highlight-color: transparent; }
     button, .btn, .row, select, summary { touch-action: manipulation; -webkit-touch-callout: none; }
@@ -816,13 +847,14 @@ create table if not exists price_history (
     <nav class="tools" id="tools" aria-label="ابزارها" hidden>
       <button class="tool" id="histBtn" type="button"><span class="ti" style="--ic:var(--c1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>تاریخچه</button>
       <button class="tool" id="repBtn" type="button"><span class="ti" style="--ic:var(--c4)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg></span>گزارش‌ها</button>
+      <button class="tool" id="chatBtn" type="button"><span class="ti" style="--ic:var(--c3)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><i class="badge" id="chatBadge" hidden></i></span>گفتگو</button>
       <button class="tool" id="shelvesBtn" type="button"><span class="ti" style="--ic:var(--c5)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9h8v8l-9 9z"/></svg></span>قفسه‌ها</button>
     </nav>
 
     <div class="lists" id="lists">
       <section aria-labelledby="todoTitle">
         <div class="sec-head"><h2 id="todoTitle">باید خرید<span class="count" id="todoCount"></span></h2>
-          <button class="toggle" id="groupBtn" type="button" aria-pressed="true" hidden>گروه‌بندی قفسه</button>
+          <span class="sec-tools"><button class="toggle" id="foldBtn" type="button" hidden>جمع کردن همه</button><button class="toggle" id="groupBtn" type="button" aria-pressed="true" hidden>گروه‌بندی قفسه</button></span>
         </div>
         <div id="todoBody"><div class="skeleton"></div><div class="skeleton"></div></div>
       </section>
@@ -934,6 +966,20 @@ create table if not exists price_history (
   </dialog>
 
   <div class="offline-bar" id="offBar" role="status" hidden>اتصال اینترنت قطع است. آخرین وضعیت لیست نمایش داده می‌شود و تغییرات ثبت نمی‌شوند.</div>
+
+  <dialog class="sheet" id="chatDlg" aria-labelledby="chatTitle">
+    <div class="chat-in">
+      <div class="sheet-head">
+        <h2 id="chatTitle">گفتگوی لیست</h2>
+        <button class="btn" id="chatClose" type="button">بستن</button>
+      </div>
+      <div class="chat-log" id="chatLog" role="log" aria-live="polite"></div>
+      <form class="chat-form" id="chatForm" autocomplete="off">
+        <textarea class="field" id="chatInput" rows="1" maxlength="1000" placeholder="پیام برای اعضای لیست…" aria-label="پیام"></textarea>
+        <button class="btn btn-primary" id="chatSend" type="submit">ارسال</button>
+      </form>
+    </div>
+  </dialog>
 
   <dialog class="sheet" id="iosDlg" aria-labelledby="iosTitle">
     <div class="sheet-in">
@@ -1635,12 +1681,14 @@ notify pgrst, 'reload schema';`;
       fx: new Map(),             // one-shot animations: item id (or 'n:name') -> 'add' | 'done' | 'back'
       listId: null,              // list currently shown
       hist: { rows: [], loading: false, hasMore: false, open: new Set(), detail: new Map() },
+      chat: { msgs: [], loaded: false, unread: 0, missing: false, sending: false },
       rep: { range: 'all', loading: false, error: null, data: null, item: '', seq: 0 },
     };
 
     // ---------- Helpers ----------
     const $ = id => document.getElementById(id);
-    const faNum = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 2 });
+    const faNum = new Intl.NumberFormat('fa-IR', { maximumFractionDigits: 3 });
+    const round3 = x => Math.round(x * 1000) / 1000;
     const fmt = n => faNum.format(Number(n) || 0);
     const faDate = new Intl.DateTimeFormat('fa-IR', { year: 'numeric', month: 'short', day: 'numeric' });
     const GRIP = '<svg viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><circle cx="6" cy="4" r="1.6"/><circle cx="12" cy="4" r="1.6"/><circle cx="6" cy="9" r="1.6"/><circle cx="12" cy="9" r="1.6"/><circle cx="6" cy="14" r="1.6"/><circle cx="12" cy="14" r="1.6"/></svg>';
@@ -2002,7 +2050,7 @@ notify pgrst, 'reload schema';`;
             <h3>تعداد</h3>
             <div class="stepper">
               <button type="button" data-act="dec" aria-label="کم کردن">−</button>
-              <output>${fmt(qty)}</output>
+              <input class="qty-in" inputmode="decimal" value="${fmt(qty)}" data-qty-for="${id}" aria-label="تعداد؛ عدد اعشاری مثل ۰٫۵ هم قبول است">
               <button type="button" data-act="inc" aria-label="زیاد کردن">+</button>
             </div>
           </div>`;
@@ -2036,7 +2084,7 @@ notify pgrst, 'reload schema';`;
       const meta = whoLine + shelfTag + (price > 0
         ? `${fmt(qty)} × ${fmt(price)}${trendHTML(hist)}`
         : `تعداد ${fmt(qty)}، قیمت ثبت نشده`);
-      const sum = price > 0 ? fmt(qty * price) : '—';
+      const sum = price > 0 ? fmt(Math.round(qty * price)) : '—';
       const tickLabel = (done ? 'بازگرداندن به لیست: ' : 'خریداری شد: ') + esc(item.name);
       return `<li class="row ${done ? 'is-done' : ''} ${fx ? 'fx-' + fx : ''}" data-id="${id}">
         <div class="row-main ${sortable ? 'has-grip' : ''}">
@@ -2052,17 +2100,40 @@ notify pgrst, 'reload schema';`;
       </li>`;
     }
 
+    // Folded shelves are remembered per list on this device.
+    function foldSet() {
+      if (state.foldFor !== state.listId) {
+        let a = [];
+        try { a = JSON.parse(localStorage.getItem('shop.fold.' + state.listId) || '[]'); } catch (e) { /* ignore */ }
+        state.fold = new Set(Array.isArray(a) ? a : []); state.foldFor = state.listId;
+      }
+      return state.fold;
+    }
+    function saveFold() { try { localStorage.setItem('shop.fold.' + state.listId, JSON.stringify([...foldSet()])); } catch (e) { /* ignore */ } }
+    function toggleFold(k) { const f = foldSet(); if (f.has(k)) f.delete(k); else f.add(k); saveFold(); render(); }
+    function updateFoldBtn() {
+      const keys = state.shelfKeys || [], b = $('foldBtn');
+      const show = state.groupByShelf && keys.length > 1;
+      b.hidden = !show;
+      if (show) b.textContent = keys.every(k => foldSet().has(k)) ? 'باز کردن همه' : 'جمع کردن همه';
+    }
+
     function todoGroupsHTML(todo) {
       const rows = (arr, sortable) => arr.map(i => rowHTML(i, sortable, !state.groupByShelf)).join('');
+      state.shelfKeys = [];
       if (!state.groupByShelf) return `<ul class="list">${rows(todo, todo.length > 1)}</ul>`;
       const groups = new Map();
       todo.forEach(i => { const k = i.shelf || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
       const keys = [...groups.keys()].sort(shelfCmp);
       if (keys.length === 1 && keys[0] === '') return `<ul class="list">${rows(todo, todo.length > 1)}</ul>`;
+      state.shelfKeys = keys;
       return keys.map(k => {
-        const arr = groups.get(k);
-        return `<div class="shelf" style="--sc:${shelfColorVar(k)}"><h3 class="shelf-title">${k ? esc(k) : 'بدون قفسه'}<span class="count">${fmt(arr.length)}</span></h3>
-          <ul class="list">${rows(arr, arr.length > 1)}</ul></div>`;
+        const arr = groups.get(k), folded = foldSet().has(k);
+        const est = arr.reduce((t, i) => t + Math.round((Number(i.quantity) || 1) * (Number(i.last_price) || 0)), 0);
+        return `<div class="shelf${folded ? ' folded' : ''}" style="--sc:${shelfColorVar(k)}"><h3 class="shelf-title"><button class="shelf-toggle" type="button" data-fold="${esc(k)}" aria-expanded="${!folded}">
+            <svg class="chev" viewBox="0 0 12 12" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.5l4 4 4-4"/></svg>
+            <span class="st-name">${k ? esc(k) : 'بدون قفسه'}</span><span class="count">${fmt(arr.length)}</span>${folded && est > 0 ? `<span class="st-sum">${fmt(est)}</span>` : ''}</button></h3>
+          <ul class="list"${folded ? ' hidden' : ''}>${rows(arr, arr.length > 1)}</ul></div>`;
       }).join('');
     }
 
@@ -2140,13 +2211,15 @@ notify pgrst, 'reload schema';`;
         todoBody.innerHTML = '<div class="empty"><p>همه کالاها خریداری شد.</p><p>اگر کارتان تمام شده، «پایان خرید» را بزنید.</p></div>';
       }
 
+      if (!todo.length) state.shelfKeys = [];
+      updateFoldBtn();
       $('doneSection').hidden = done.length === 0;
       $('doneCount').textContent = done.length ? fmt(done.length) : '';
       $('doneBody').innerHTML = done.length ? `<ul class="list">${done.map(i => rowHTML(i, false, true)).join('')}</ul>` : '';
 
       let est = 0, spent = 0, noPrice = 0;
       listItems.forEach(i => {
-        const t = (Number(i.quantity) || 1) * (Number(i.last_price) || 0);
+        const t = Math.round((Number(i.quantity) || 1) * (Number(i.last_price) || 0));
         if (i.is_checked) spent += t;
         else { est += t; if (!(Number(i.last_price) > 0)) noPrice++; }
       });
@@ -2297,7 +2370,7 @@ notify pgrst, 'reload schema';`;
             .select().single());
           if (created && p > 0) ok(await db.from('price_history').insert([{ list_id: state.listId, item_id: created.id, price: p }]));
         }
-      }, 'به لیست اضافه شد.').then(r => { if (r) Track.event('item_added'); return r; });
+      }, 'به لیست اضافه شد.').then(r => { if (r) { Track.event('item_added'); if (foldSet().delete(shelf || '')) { saveFold(); render(); } } return r; });
     }
 
     async function addByName(raw) {
@@ -2356,10 +2429,21 @@ notify pgrst, 'reload schema';`;
     async function changeQty(id, delta) {
       const item = findItem(id);
       if (!item) return;
-      const next = (Number(item.quantity) || 1) + delta;
-      if (next <= 0) return;
+      const next = round3((Number(item.quantity) || 1) + delta);
+      if (next <= 0) { toast('کمتر از این نمی‌شود. برای مقدار کمتر، عدد اعشاری را بنویسید.'); return; }
       await mutate(async () => {
         ok(await db.from('items').update({ quantity: next, updated_at: nowISO() }).eq('id', id));
+      });
+    }
+
+    async function setQty(id, v, inp) {
+      const item = findItem(id);
+      if (!item) return;
+      if (!(v > 0) || v > 100000) { toast('تعداد باید عددی بزرگ‌تر از صفر باشد.', 'error'); if (inp) inp.value = fmt(item.quantity); return; }
+      v = round3(v);
+      if (v === Number(item.quantity)) { if (inp) inp.value = fmt(v); return; }
+      await mutate(async () => {
+        ok(await db.from('items').update({ quantity: v, updated_at: nowISO() }).eq('id', id));
       });
     }
 
@@ -2496,7 +2580,7 @@ notify pgrst, 'reload schema';`;
       const inList = state.items.filter(i => i.in_list);
       const bought = inList.filter(i => i.is_checked);
       const pending = inList.length - bought.length;
-      const spent = bought.reduce((t, i) => t + (Number(i.quantity) || 1) * (Number(i.last_price) || 0), 0);
+      const spent = bought.reduce((t, i) => t + Math.round((Number(i.quantity) || 1) * (Number(i.last_price) || 0)), 0);
       return { total: inList.length, bought: bought.length, pending, spent };
     }
 
@@ -2710,7 +2794,7 @@ notify pgrst, 'reload schema';`;
       const trips = new Set(), months = new Map(), shelves = new Map(), items = new Map(), buyers = new Map();
       let total = 0;
       rows.forEach(r => {
-        const qty = Number(r.quantity) || 1, price = Number(r.unit_price) || 0, amt = qty * price;
+        const qty = Number(r.quantity) || 1, price = Number(r.unit_price) || 0, amt = Math.round(qty * price);
         const when = r.sessions && r.sessions.ended_at;
         total += amt;
         trips.add(r.session_id);
@@ -3026,6 +3110,11 @@ notify pgrst, 'reload schema';`;
         case 'delete': deleteShelf(id); break;
       }
     });
+    $('foldBtn').addEventListener('click', () => {
+      const keys = state.shelfKeys || [], f = foldSet();
+      if (keys.every(k => f.has(k))) f.clear(); else keys.forEach(k => f.add(k));
+      saveFold(); render();
+    });
     $('groupBtn').addEventListener('click', () => {
       state.groupByShelf = !state.groupByShelf;
       saveGroupPref(state.groupByShelf);
@@ -3079,11 +3168,19 @@ notify pgrst, 'reload schema';`;
     $('addForm').addEventListener('click', e => {
       const b = e.target.closest('[data-step]');
       if (!b) return;
-      const next = currentQty() + Number(b.dataset.step);
-      if (next > 0) qtyEl.value = String(next);
+      const next = round3(currentQty() + Number(b.dataset.step));
+      if (next > 0) qtyEl.value = String(next); else toast('کمتر از این نمی‌شود. مقدار را دستی بنویسید.');
     });
 
+    $('lists').addEventListener('change', e => {
+      const inp = e.target.closest('[data-qty-for]');
+      if (inp) setQty(Number(inp.dataset.qtyFor), parseNum(inp.value), inp);
+    });
+    $('lists').addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.qty-in')) e.target.select(); });
+
     $('lists').addEventListener('click', e => {
+      const fb = e.target.closest('[data-fold]');
+      if (fb) { toggleFold(fb.dataset.fold); return; }
       const btn = e.target.closest('[data-act]');
       if (!btn) return;
       const act = btn.dataset.act;
@@ -3266,6 +3363,7 @@ notify pgrst, 'reload schema';`;
           .on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: `list_id=eq.${state.listId}` }, softRefresh)
           .subscribe();
       } catch (e) { /* Realtime is optional */ }
+      chatBadge(); chatInit();
     }
 
     const listPrefKey = () => 'shop.list.' + (state.user ? state.user.id : '');
@@ -3277,6 +3375,7 @@ notify pgrst, 'reload schema';`;
         items: [], history: new Map(), names: new Map(), namesList: null, namesAt: 0, open: new Set(), editing: null, loaded: false, error: null,
         needsMigration: false, shelves: [], shelfList: [], rank: new Map(), adopted: new Set(), shelfTouched: false,
         hist: { rows: [], loading: false, hasMore: false, open: new Set(), detail: new Map() },
+      chat: { msgs: [], loaded: false, unread: 0, missing: false, sending: false },
         rep: { range: 'all', loading: false, error: null, data: null, item: '', seq: 0 },
       });
     }
@@ -3413,8 +3512,8 @@ notify pgrst, 'reload schema';`;
 
     function leaveApp() {
       document.documentElement.classList.remove('in-app');
-      unsubscribeRealtime();
-      ['listsDlg', 'membersDlg', 'acctDlg', 'shelfDlg', 'histDlg', 'repDlg', 'endDlg'].forEach(id => { const d = $(id); if (d && d.open) d.close(); });
+      unsubscribeRealtime(); unsubscribeChat();
+      ['chatDlg', 'listsDlg', 'membersDlg', 'acctDlg', 'shelfDlg', 'histDlg', 'repDlg', 'endDlg'].forEach(id => { const d = $(id); if (d && d.open) d.close(); });
       clearCaches();
       state.user = null; state.lists = []; state.listId = null;
       resetListState();
@@ -3564,9 +3663,9 @@ notify pgrst, 'reload schema';`;
         const out = { app: 'shopping-list', format: 1, exported_at: new Date().toISOString(), account: state.user ? state.user.email : '', lists: [] };
         for (const l of state.lists) {
           const q = (table) => fetchAll(() => db.from(table).select('*').eq('list_id', l.id).order('id'));
-          const [items, shelves, price_history, sessions, session_items] =
-            await Promise.all([q('items'), q('shelves'), q('price_history'), q('sessions'), q('session_items')]);
-          out.lists.push({ list: { id: l.id, name: l.name }, items, shelves, price_history, sessions, session_items });
+          const [items, shelves, price_history, sessions, session_items, messages] =
+            await Promise.all([q('items'), q('shelves'), q('price_history'), q('sessions'), q('session_items'), q('list_messages').catch(() => [])]);
+          out.lists.push({ list: { id: l.id, name: l.name }, items, shelves, price_history, sessions, session_items, messages });
         }
         const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
@@ -3582,6 +3681,138 @@ notify pgrst, 'reload schema';`;
       }
       btn.disabled = false;
     }
+    // ---------- Chat (one conversation per list) ----------
+    const isMissingChat = err => err && (['PGRST205', 'PGRST202', '42P01', '42703'].includes(err.code) || /list_messages|chat_read_at|mark_chat_read|schema cache/.test(err.message || ''));
+    let chatChannel = null;
+    function unsubscribeChat() { if (chatChannel) { try { db.removeChannel(chatChannel); } catch (e) { /* ignore */ } chatChannel = null; } }
+    function chatBadge() {
+      const n = state.chat.unread, b = $('chatBadge');
+      b.hidden = !n; b.textContent = n > 9 ? '+۹' : fmt(n);
+    }
+    const chatSnippet = t => { const x = String(t).replace(/\s+/g, ' ').trim(); return x.length > 60 ? x.slice(0, 60) + '…' : x; };
+    async function chatInit() {
+      unsubscribeChat();
+      const lid = state.listId;
+      if (!lid || !state.user) return;
+      try {
+        const m = await db.from('list_members').select('chat_read_at').eq('list_id', lid).eq('user_id', state.user.id).maybeSingle();
+        if (lid !== state.listId) return;
+        if (m.error) { if (isMissingChat(m.error)) state.chat.missing = true; return; }
+        let q = db.from('list_messages').select('id', { count: 'exact', head: true }).eq('list_id', lid).neq('user_id', state.user.id);
+        if (m.data && m.data.chat_read_at) q = q.gt('created_at', m.data.chat_read_at);
+        const r = await q;
+        if (lid !== state.listId) return;
+        if (r.error) { if (isMissingChat(r.error)) state.chat.missing = true; return; }
+        state.chat.unread = r.count || 0; chatBadge();
+        chatChannel = db.channel('chat-' + lid)
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'list_messages', filter: `list_id=eq.${lid}` }, p => onChatInsert(p.new, lid))
+          .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'list_messages' }, p => onChatDelete(p.old))
+          .subscribe();
+      } catch (e) { /* chat is optional */ }
+    }
+    function onChatInsert(row, lid) {
+      if (!row || lid !== state.listId) return;
+      const mine = state.user && row.user_id === state.user.id;
+      if (state.chat.loaded && !state.chat.msgs.some(m => m.id === row.id)) state.chat.msgs.push(row);
+      if ($('chatDlg').open) { renderChat(true); if (!mine) markChatRead(); return; }
+      if (mine) return;
+      state.chat.unread++; chatBadge();
+      toast(`${displayName(row.user_id) || 'عضو لیست'}: ${chatSnippet(row.body)}`);
+    }
+    function onChatDelete(old) {
+      if (!old || !state.chat.loaded) return;
+      const n = state.chat.msgs.length;
+      state.chat.msgs = state.chat.msgs.filter(m => m.id !== old.id);
+      if (state.chat.msgs.length !== n && $('chatDlg').open) renderChat(false);
+    }
+    async function markChatRead() {
+      state.chat.unread = 0; chatBadge();
+      try { await db.rpc('mark_chat_read', { lid: state.listId }); } catch (e) { /* ignore */ }
+    }
+    const chatDayFmt = new Intl.DateTimeFormat('fa-IR', { weekday: 'long', month: 'long', day: 'numeric' });
+    const chatTimeFmt = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' });
+    function linkify(t) { return esc(t).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'); }
+    function renderChat(toBottom) {
+      const log = $('chatLog');
+      if (state.chat.missing) {
+        log.innerHTML = '<p class="chat-note">برای فعال شدن گفتگو، یک بار فایل <b>supabase-chat-update.sql</b> را در بخش SQL Editor ‏Supabase اجرا کنید.</p>';
+        $('chatForm').hidden = true; return;
+      }
+      $('chatForm').hidden = false;
+      const msgs = state.chat.msgs;
+      if (!state.chat.loaded) { log.innerHTML = '<p class="chat-note">در حال بارگذاری…</p>'; return; }
+      if (!msgs.length) { log.innerHTML = '<p class="empty">هنوز پیامی نیست.<br>هر چیزی که در لیست نمی‌گنجد را اینجا بنویسید؛ مثلاً «برند دیگه‌ای نبود» یا «کارت تخفیف دارم».</p>'; return; }
+      const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+      let html = '', lastDay = '', prev = null;
+      msgs.forEach(m => {
+        const d = new Date(m.created_at), day = d.toDateString();
+        if (day !== lastDay) { html += `<div class="cday">${chatDayFmt.format(d)}</div>`; lastDay = day; prev = null; }
+        const mine = state.user && m.user_id === state.user.id;
+        const first = !prev || prev.user_id !== m.user_id || d - new Date(prev.created_at) > 5 * 60000;
+        const name = mine ? '' : (m.user_id ? (displayName(m.user_id) || 'عضو لیست') : 'عضو سابق');
+        html += `<div class="cmsg${mine ? ' mine' : ''}${first ? ' first' : ''}" data-id="${m.id}" style="--wc:${m.user_id ? userColorVar(m.user_id) : 'var(--muted)'}">
+          ${first && name ? `<span class="cname">${esc(name)}</span>` : ''}<div class="cbody" dir="auto">${linkify(m.body)}</div>
+          <div class="cmeta"><span>${chatTimeFmt.format(d)}</span>${mine ? '<button type="button" data-del="' + m.id + '">حذف</button>' : ''}</div></div>`;
+        prev = m;
+      });
+      log.innerHTML = html;
+      if (toBottom || atBottom) log.scrollTop = log.scrollHeight;
+    }
+    async function chatLoad() {
+      const lid = state.listId;
+      const r = await db.from('list_messages').select('id,user_id,body,created_at').eq('list_id', lid).order('created_at', { ascending: false }).limit(150);
+      if (lid !== state.listId) return;
+      if (r.error) { if (isMissingChat(r.error)) state.chat.missing = true; else toast('دریافت پیام‌ها انجام نشد.', 'error'); renderChat(); return; }
+      state.chat.msgs = (r.data || []).reverse(); state.chat.loaded = true;
+      renderChat(true);
+    }
+    async function openChat() {
+      $('chatDlg').showModal();
+      renderChat();
+      if ((state.memberCounts.get(state.listId) || 0) > 1) loadMemberNames(state.listId).then(() => { if ($('chatDlg').open) renderChat(); });
+      if (!state.chat.missing) { await chatLoad(); if (!state.chat.missing) markChatRead(); }
+    }
+    async function sendChat() {
+      const inp = $('chatInput'), text = inp.value.trim();
+      if (!text || state.chat.sending) return;
+      state.chat.sending = true; inp.value = ''; inp.style.height = '';
+      try {
+        const r = await db.from('list_messages').insert([{ list_id: state.listId, body: text }]).select('id,user_id,body,created_at').single();
+        if (r.error) throw r.error;
+        if (!state.chat.msgs.some(m => m.id === r.data.id)) state.chat.msgs.push(r.data);
+        renderChat(true); Track.event('chat_sent');
+      } catch (e) {
+        console.error(e); inp.value = text; toast('پیام ارسال نشد.', 'error');
+      } finally { state.chat.sending = false; }
+    }
+    $('chatBtn').addEventListener('click', openChat);
+    $('chatClose').addEventListener('click', () => $('chatDlg').close());
+    $('chatDlg').addEventListener('click', e => { if (e.target === $('chatDlg')) $('chatDlg').close(); });
+    $('chatForm').addEventListener('submit', e => { e.preventDefault(); sendChat(); });
+    $('chatInput').addEventListener('input', e => { const t = e.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 120) + 'px'; });
+    $('chatInput').addEventListener('keydown', e => {
+      const desktop = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && desktop) { e.preventDefault(); sendChat(); }
+    });
+    $('chatLog').addEventListener('click', async e => {
+      const b = e.target.closest('[data-del]');
+      if (!b) return;
+      const id = Number(b.dataset.del);
+      const r = await db.from('list_messages').delete().eq('id', id);
+      if (r.error) { toast('حذف نشد.', 'error'); return; }
+      state.chat.msgs = state.chat.msgs.filter(m => m.id !== id); renderChat(false);
+    });
+    if (window.visualViewport) {
+      const vv = window.visualViewport;
+      const fitChat = () => {
+        const d = $('chatDlg');
+        d.style.setProperty('--vvh', vv.height + 'px');
+        d.style.setProperty('--kb', Math.max(0, window.innerHeight - vv.height - vv.offsetTop) + 'px');
+        if (d.open) { const l = $('chatLog'); l.scrollTop = l.scrollHeight; }
+      };
+      vv.addEventListener('resize', fitChat); vv.addEventListener('scroll', fitChat);
+    }
+
     // ---------- Install as an app + offline notice ----------
     let deferredInstall = null;
     const isStandalone = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
@@ -3632,8 +3863,8 @@ notify pgrst, 'reload schema';`;
     }
     const EVT = { landing_view: 'دیدن صفحه معرفی', signup: 'ثبت‌نام', login: 'ورود', app_open: 'باز کردن برنامه', item_added: 'افزودن کالا',
       item_bought: 'ثبت خرید کالا', trip_ended: 'پایان یک خرید', report_opened: 'دیدن گزارش', list_created: 'ساخت لیست جدید',
-      invite_created: 'ساخت لینک دعوت', invite_joined: 'پیوستن با دعوت', install_click: 'زدن دکمه نصب', pwa_installed: 'نصب برنامه', export_data: 'نسخه پشتیبان' };
-    const FUNNEL = ['landing_view', 'signup', 'app_open', 'item_added', 'item_bought', 'trip_ended', 'invite_created', 'invite_joined', 'install_click', 'pwa_installed'];
+      invite_created: 'ساخت لینک دعوت', invite_joined: 'پیوستن با دعوت', install_click: 'زدن دکمه نصب', chat_sent: 'ارسال پیام گفتگو', pwa_installed: 'نصب برنامه', export_data: 'نسخه پشتیبان' };
+    const FUNNEL = ['landing_view', 'signup', 'app_open', 'item_added', 'item_bought', 'trip_ended', 'invite_created', 'invite_joined', 'chat_sent', 'install_click', 'pwa_installed'];
     const dayFmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'short', day: 'numeric' });
     function daySeries(arr) {
       const rows = (arr || []).slice(-14), max = Math.max(1, ...rows.map(x => x.n));
