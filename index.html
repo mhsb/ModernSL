@@ -428,7 +428,14 @@ create table if not exists price_history (
     .tool .ti { position: relative; }
     .badge { position: absolute; top: -5px; inset-inline-end: -6px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--danger-solid, #d33); color: #fff; font: 700 11px/18px inherit; font-style: normal; text-align: center; }
     .badge[hidden] { display: none; }
-    @media (max-width: 400px) { .tools { gap: 6px; } .tool { gap: 5px; font-size: 13px; } .tool .ti { width: 24px; height: 24px; } }
+    /* Four tools must always fit the screen: icon above label, never wider than the phone. */
+    html { overflow-x: clip; }
+    .tools { gap: 6px; min-width: 0; }
+    .tools .tool { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 4px; padding: 8px 2px 7px; min-height: 58px; font-size: 12.5px; line-height: 1.2; white-space: nowrap; }
+    .tools .tool .ti { width: 28px; height: 28px; }
+    .sec-head { flex-wrap: wrap; gap: 6px 10px; }
+    .sec-tools { flex-wrap: wrap; justify-content: flex-end; }
+    .sec-tools .toggle { padding: 2px 10px; }
     #chatDlg { margin-bottom: var(--kb, 0px); }
     .chat-in { display: flex; flex-direction: column; padding: 16px 14px calc(14px + env(safe-area-inset-bottom)); height: min(82vh, calc(var(--vvh, 100vh) - 24px)); }
     .chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; padding: 4px 2px 10px; overscroll-behavior: contain; }
@@ -854,7 +861,7 @@ create table if not exists price_history (
     <div class="lists" id="lists">
       <section aria-labelledby="todoTitle">
         <div class="sec-head"><h2 id="todoTitle">باید خرید<span class="count" id="todoCount"></span></h2>
-          <span class="sec-tools"><button class="toggle" id="foldBtn" type="button" hidden>جمع کردن همه</button><button class="toggle" id="groupBtn" type="button" aria-pressed="true" hidden>گروه‌بندی قفسه</button></span>
+          <span class="sec-tools"><button class="toggle" id="foldBtn" type="button" hidden>بستن همه</button><button class="toggle" id="groupBtn" type="button" aria-pressed="true" hidden>قفسه‌بندی</button></span>
         </div>
         <div id="todoBody"><div class="skeleton"></div><div class="skeleton"></div></div>
       </section>
@@ -2115,7 +2122,7 @@ notify pgrst, 'reload schema';`;
       const keys = state.shelfKeys || [], b = $('foldBtn');
       const show = state.groupByShelf && keys.length > 1;
       b.hidden = !show;
-      if (show) b.textContent = keys.every(k => foldSet().has(k)) ? 'باز کردن همه' : 'جمع کردن همه';
+      if (show) b.textContent = keys.every(k => foldSet().has(k)) ? 'بازکردن همه' : 'بستن همه';
     }
 
     function todoGroupsHTML(todo) {
